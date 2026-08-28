@@ -1,16 +1,23 @@
 # NeoCharts — Complete Charting & Trading Integration for Brokers
 
-**NeoCharts provides the complete charting and trading experience required by modern brokerage platforms.**
+**NeoCharts provides a complete charting and trading experience for modern brokerage platforms.**
 
-It is a **powerful, white-label trading chart SDK** designed for brokers, fintech platforms, and trading applications. NeoCharts can be integrated directly into a broker’s existing application, providing everything needed for professional market analysis, technical analysis, order execution, position management, and real-time P&L — all within a single interface.
+NeoCharts is a powerful, white-label trading chart SDK designed for brokers, fintech platforms, and trading applications. It can be integrated into an existing broker application to provide professional market analysis, technical analysis, order execution, position management, and real-time P&L — all within a single interface.
 
-> **Analyze → Trade → Manage → Repeat**
+> **Analyze → Trade → Manage**
+
+### Experience the NeoCharts Application
+
+**[Click here to experience the NeoCharts application](neocharts-exampleapp/apk/app-release.apk)**
+
+Download and install the APK to explore the complete NeoCharts charting and trading experience.
+
 
 ---
 
 ## What the NeoCharts Mock Integration Covers
 
-The **NeoCharts mock integration** demonstrates the complete broker-side charting and trading experience, including:
+The NeoCharts mock integration demonstrates a complete broker-side charting and trading workflow, including:
 
 * **Professional market charts**
 * **40+ technical indicators**
@@ -24,7 +31,7 @@ The **NeoCharts mock integration** demonstrates the complete broker-side chartin
 * **Instant position exit**
 * **Real-time position and P&L tracking**
 
-The mock integration demonstrates how the complete NeoCharts experience can be embedded into a broker application and connected to the broker’s existing trading infrastructure.
+The mock integration demonstrates how NeoCharts can be embedded into a broker application and connected to the broker's existing trading infrastructure.
 
 ---
 
@@ -53,7 +60,7 @@ More than 15 drawing tools for identifying trends, support/resistance levels, pa
 Support for 5+ chart types to accommodate different trading and analysis styles.
 
 **Multi-Timeframe Analysis**
-Traders can quickly switch between timeframes and analyze market movements from different perspectives.
+Quickly switch between timeframes to analyze market movements from different perspectives.
 
 **Split-Screen Charts**
 Compare multiple instruments or timeframes side by side for more effective market analysis.
@@ -62,7 +69,7 @@ Compare multiple instruments or timeframes side by side for more effective marke
 
 ## Trade Directly From the Chart
 
-The chart is not just a visualization component. **NeoCharts is designed to act as the trader’s complete workspace.**
+NeoCharts goes beyond chart visualization by providing trading functionality directly within the charting workspace.
 
 Traders can analyze an instrument, execute trades, manage positions, and monitor P&L without leaving the chart.
 
@@ -86,7 +93,7 @@ Monitor realized and unrealized P&L while continuing to analyze the market.
 
 ## Complete Broker Trading Flow
 
-The NeoCharts experience follows a simple end-to-end workflow:
+The NeoCharts workflow connects market analysis with execution and position management:
 
 **Market Analysis → Chart → Trading Actions → Position Management → Real-Time P&L**
 
@@ -122,7 +129,7 @@ The NeoCharts experience follows a simple end-to-end workflow:
 
 ## White-Label Broker Integration
 
-NeoCharts is designed to integrate with the broker's existing infrastructure while keeping the **broker's application and brand at the center**.
+NeoCharts integrates with the broker's existing infrastructure while keeping the **broker's application and brand at the center**.
 
 The broker retains control over:
 
@@ -138,7 +145,7 @@ The broker retains control over:
 
 NeoCharts provides the **charting and trading interface layer** on top of this infrastructure.
 
-This allows brokers to provide a professional trading experience without having to build and maintain the complete charting engine and trading interface from scratch.
+This enables brokers to deliver a professional trading experience without having to build and maintain the complete charting engine and trading interface from scratch.
 
 ---
 
@@ -152,13 +159,13 @@ The mock integration is designed around the major mobile platforms used by moder
 | **Android** | Kotlin     |
 | **iOS**     | Swift      |
 
-NeoCharts enables brokers to build around their existing trading infrastructure while delivering a consistent charting experience across mobile platforms.
+NeoCharts enables brokers to work with their existing trading infrastructure while delivering a consistent charting experience across mobile platforms.
 
 ---
 
 ## Built for Trading Platforms
 
-NeoCharts is suitable for a wide range of financial and trading applications, including:
+NeoCharts can be integrated into a wide range of financial and trading applications:
 
 * **Brokerage Platforms**
 * **Stock Trading Apps**
@@ -173,51 +180,38 @@ NeoCharts is suitable for a wide range of financial and trading applications, in
 
 ## The NeoCharts Experience
 
-NeoCharts combines **advanced technical analysis** and **real-time trading functionality** into one seamless experience.
+NeoCharts brings advanced technical analysis and trading functionality together in one workspace.
 
-Instead of switching between separate chart, order, and position screens, traders can:
+Traders can:
 
 **Analyze the market → Identify an opportunity → Place an order → Set risk levels → Manage the position → Monitor P&L**
 
-—all from the same charting workspace.
-
-### Analyze faster. Trade faster. Manage smarter.
+### **Analyze faster. Trade faster. Manage smarter.**
 
 ---
 
 ## At a Glance
 
-|                      |               |             |                  |
-| -------------------- | ------------- | ----------- | ---------------- |
 | **40+**              | **15+**       | **5+**      | **3**            |
+| -------------------- | ------------- | ----------- | ---------------- |
 | Technical Indicators | Drawing Tools | Chart Types | Mobile Platforms |
 
 ---
 
-## Main Point
+## Why NeoCharts
 
-**NeoCharts contains the entire charting and trading requirement a broker needs for a modern mobile trading platform.**
+NeoCharts provides the core charting and trading workspace required by a modern mobile trading platform.
 
-The **mock integration serves as a complete proof-of-concept** demonstrating how NeoCharts can be embedded into a broker application and connected to the broker's existing infrastructure.
+The mock integration demonstrates how the SDK can be embedded into a broker application and connected to the broker's existing:
 
-It covers the complete journey from:
+* Market data
+* Trading infrastructure
+* APIs
+* Authentication
+* Backend services
+* Order management systems
 
-**Market Analysis → Technical Analysis → Order Execution → Stop-Loss & Target Management → Position Management → Real-Time P&L**
-
-In short:
-
-> **NeoCharts provides the complete charting and trading workspace, while the broker connects its own market data, trading infrastructure, APIs, authentication, and backend services.**
-
-This approach allows brokers to deliver a **professional, seamless, white-label trading experience** without building the complete charting and trading interface from the ground up.
-
----
-
-## Documentation
-
-Get started with NeoCharts and explore the complete integration guides, APIs, configuration, and platform-specific documentation.
-
-**→ Explore NeoCharts Documentation:**
-https://docs-neocharts.iouring.com/
+This architecture allows brokers to deliver a **professional, seamless, white-label trading experience** without building the complete charting and trading interface from the ground up.
 
 ---
 
@@ -225,11 +219,13 @@ https://docs-neocharts.iouring.com/
 
 For SDK access, integration support, licensing, or technical assistance, contact the **NeoCharts / iouring team** through the designated support channel.
 
+**Support:** https://www.iouring.com/neocharts
+
 ---
 
 # NeoCharts
 
-### The Chart Is Your Trading Desk.
+### **The Chart Is Your Trading Desk.**
 
 **Advanced Charting · Seamless Trading · White-Label Experience**
 
