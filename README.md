@@ -8,7 +8,7 @@ NeoCharts is a powerful, white-label trading chart SDK designed for brokers, fin
 
 ### Experience the NeoCharts Application
 
-**[Click here to experience the NeoCharts application](neocharts-exampleapp/apk/app-release.apk)**
+**[Click here to experience the NeoCharts application](apk/app-release.apk)**
 
 Download and install the APK to explore the complete NeoCharts charting and trading experience.
 
