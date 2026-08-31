@@ -15,6 +15,51 @@ Download and install the APK to explore the complete NeoCharts charting and trad
 
 ---
 
+## Developer Guide
+
+This is a Flutter app. It uses [FVM](https://fvm.app/) to pin the Flutter SDK version declared in `.fvmrc`, and pulls the `nxtchart` charting SDK from a private git repository, so you'll need SSH access to `ssh.dev.azure.com` configured before fetching packages.
+
+### Setup
+
+```bash
+# Install FVM if you don't have it: https://fvm.app/docs/getting_started/installation
+fvm install          # installs the Flutter version pinned in .fvmrc
+fvm flutter pub get  # fetches dependencies (requires SSH access to the nxtchart repo)
+```
+
+### Run
+
+```bash
+fvm flutter devices        # list available devices/simulators
+fvm flutter run            # run on a connected device or simulator
+fvm flutter run -d chrome  # run in a browser
+```
+
+### Test
+
+```bash
+fvm flutter test
+```
+
+### Lint & format
+
+```bash
+fvm flutter analyze   # static analysis, using the rules in analysis_options.yaml
+fvm dart format .     # apply standard Dart formatting
+fvm dart format --output=none --set-exit-if-changed .  # check formatting in CI without writing changes
+```
+
+### Build
+
+```bash
+fvm flutter build apk        # Android APK
+fvm flutter build ios        # iOS (requires a macOS host with Xcode)
+fvm flutter build macos      # macOS desktop
+fvm flutter build web        # Web
+```
+
+---
+
 ## What the NeoCharts Mock Integration Covers
 
 The NeoCharts mock integration demonstrates a complete broker-side charting and trading workflow, including:
