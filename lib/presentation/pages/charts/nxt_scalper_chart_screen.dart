@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neocharts_exampleapp/utils/nxt_chart_helper.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:nxtchart/widgets.dart';
 
 class NxtScalperChartScreen extends StatelessWidget {
@@ -8,7 +8,7 @@ class NxtScalperChartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NxtChartPage.scalper(
-      dataProvider: NxtChartHelper(storageKey: 'scalper_chart'),
+      dataProvider: NxtChartRepository(storageKey: 'scalper_chart'),
     );
   }
 }
