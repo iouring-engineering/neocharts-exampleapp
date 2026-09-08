@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 
@@ -139,7 +138,7 @@ class HomePage extends StatelessWidget {
                         Column(
                           children: [
                             ChartCard(
-                              title: 'Scalper Charts',
+                              title: 'NEO Charts',
                               subtitle: 'Fast charts for precision entries',
                               icon: Icons.show_chart_rounded,
                               gradient: const [
@@ -156,46 +155,10 @@ class HomePage extends StatelessWidget {
                                 );
                               },
                             ),
-                            const SizedBox(height: 16),
-                            ChartCard(
-                              title: 'Single Chart',
-                              subtitle: 'Advanced market visualization',
-                              icon: Icons.auto_graph_rounded,
-                              gradient: const [
-                                Color(0xFF7657FF),
-                                Color(0xFF4D8DFF),
-                              ],
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const NxtChartScreen(),
-                                  ),
-                                );
-                              },
-                            ),
                           ],
                         ),
 
                         const SizedBox(height: 60),
-
-                        // ─────────────────────────────
-                        // FOOTER
-                        // ─────────────────────────────
-                        Center(
-                          child: Text(
-                            'BUILT BY IOURING',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.w700,
-                              color: theme.textTheme.labelSmall?.color
-                                  ?.withValues(alpha: 0.35),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -205,6 +168,24 @@ class HomePage extends StatelessWidget {
           },
         ),
       ),
+      persistentFooterDecoration: BoxDecoration(border: Border()),
+      persistentFooterButtons: [
+        // ─────────────────────────────
+        // FOOTER
+        // ─────────────────────────────
+        Center(
+          child: Text(
+            'BUILT BY IOURING',
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 2,
+              fontWeight: FontWeight.w700,
+              color: theme.textTheme.labelSmall?.color?.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

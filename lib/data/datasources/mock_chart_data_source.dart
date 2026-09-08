@@ -20,6 +20,10 @@ class MockChartDataSource {
       ...generateIndexSymbols(),
     ];
   }
+  double _niftyLivePrice = 22600.0;
+
+  final Map<String, double> _livePrices = {};
+  final Map<String, double> _previousTickPrices = {};
 
   static const double defaultSpotPrice = 22500.0;
   static const int lotSize = 65;
@@ -219,113 +223,154 @@ class MockChartDataSource {
     required int intervalSeconds,
     required int requiredBars,
   }) {
-    final intervalMs = intervalSeconds * 1000 * 4;
+    final intervalMs = max(1, intervalSeconds) * 1000;
 
-    // Normalize timestamps because the API may provide
-    // seconds, milliseconds, microseconds, or nanoseconds.
+    final now = DateTime.now().millisecondsSinceEpoch;
+
     final actualFrom = from > 0
         ? _normalizeTimestamp(from)
-        : DateTime.now()
-              .subtract(const Duration(days: 5))
-              .millisecondsSinceEpoch;
+        : now - const Duration(days: 5).inMilliseconds;
 
-    final actualTo = to > 0
-        ? _normalizeTimestamp(to)
-        : DateTime.now().millisecondsSinceEpoch;
+    final actualTo = to > 0 ? _normalizeTimestamp(to) : now;
 
-    // Make sure the range is valid.
     final safeFrom = min(actualFrom, actualTo);
     final safeTo = max(actualFrom, actualTo);
 
-    var barCount = ((safeTo - safeFrom) / intervalMs).floor() + 1;
+    // ------------------------------------------------------------
+    // Bar count
+    // ------------------------------------------------------------
 
-    if (barCount <= 0) {
-      barCount = requiredBars > 0 ? requiredBars : 100;
-    }
+    int barCount;
 
     if (requiredBars > 0) {
-      barCount = min(barCount, requiredBars);
+      barCount = requiredBars;
+    } else {
+      barCount = ((safeTo - safeFrom) ~/ intervalMs) + 1;
     }
 
-    // Avoid creating an enormous list.
-    barCount = min(barCount, 5000);
+    barCount = max(1, min(barCount, 5000));
 
-    // Generate only HALF the number of bars.
-    // Example:
-    // 1000 -> 500
-    // 500  -> 250
-    // 101  -> 51
-    barCount = max(1, (barCount / 2).ceil());
+    // ------------------------------------------------------------
+    // Start time
+    // ------------------------------------------------------------
+
+    var startTime = safeTo - ((barCount - 1) * intervalMs);
+
+    if (startTime < safeFrom) {
+      startTime = safeFrom;
+
+      final availableBars = ((safeTo - startTime) ~/ intervalMs) + 1;
+
+      barCount = min(barCount, availableBars);
+    }
+
+    // ------------------------------------------------------------
+    // Instrument type
+    // ------------------------------------------------------------
+
+    final upperSymbol = symbolId.toUpperCase();
+
+    final isSpot = upperSymbol == 'NIFTY';
+
+    final isFuture = isFutureSymbol(symbolId);
+
+    final isMarketInstrument = isSpot || isFuture;
+
+    // ------------------------------------------------------------
+    // Price range
+    // ------------------------------------------------------------
+
+    final double minPrice;
+    final double maxPrice;
+
+    if (isMarketInstrument) {
+      minPrice = 22000.0;
+      maxPrice = 23000.0;
+    } else {
+      minPrice = 1.0;
+      maxPrice = 1000.0;
+    }
+
+    // ------------------------------------------------------------
+    // Initial price
+    // ------------------------------------------------------------
+
+    var price = _livePrices[symbolId] ?? initialPriceForSymbol(symbolId);
+
+    // For Futures, if we don't have a previous historical
+    // price, start close to Spot with a small basis.
+    if (isFuture && !_livePrices.containsKey(symbolId)) {
+      final spotPrice = _livePrices['NIFTY'] ?? _niftyLivePrice;
+
+      // Small futures basis.
+      final basis = 5.0 + _random.nextDouble() * 15.0;
+
+      price = spotPrice + basis;
+    }
+
+    price = price.clamp(minPrice, maxPrice).toDouble();
+
+    price = roundTo(price, precision);
+
+    // ------------------------------------------------------------
+    // Movement
+    // ------------------------------------------------------------
+
+    final maxMovement = isMarketInstrument ? 25.0 : 5.0;
 
     final bars = <List<dynamic>>[];
 
-    var price = initialPriceForSymbol(symbolId);
-
-    // NIFTY and FUTURES limits.
-    const marketMin = 22600.0;
-    const marketMax = 22699.0;
-
-    // Other symbols limits.
-    const symbolMin = 200.0;
-    const symbolMax = 300.0;
-
-    // Maximum movement per candle.
-    const maxMovement = 50.0;
-
-    final isNifty = symbolId == 'NIFTY';
-    final isMarketSymbol = isNifty || isFutureSymbol(symbolId);
-
-    // Keep initial price inside the correct range.
-    if (isMarketSymbol) {
-      price = price.clamp(marketMin, marketMax);
-    } else {
-      price = price.clamp(symbolMin, symbolMax);
-    }
-
-    final startTime = safeTo - ((barCount - 1) * intervalMs);
+    // ------------------------------------------------------------
+    // Generate OHLCV
+    // ------------------------------------------------------------
 
     for (var i = 0; i < barCount; i++) {
       final timestamp = startTime + (i * intervalMs);
 
       final open = price;
 
-      // Maximum movement = +/- 50 points.
-      final change = (_random.nextDouble() - 0.5) * (maxMovement * 2);
+      final movement = (_random.nextDouble() - 0.5) * (maxMovement * 2);
 
-      final close = isMarketSymbol
-          ? roundTo((open + change).clamp(marketMin, marketMax), precision)
-          : roundTo((open + change).clamp(symbolMin, symbolMax), precision);
+      final close = roundTo(
+        (open + movement).clamp(minPrice, maxPrice).toDouble(),
+        precision,
+      );
 
-      final high = isMarketSymbol
-          ? roundTo(
-              (max(open, close) + _random.nextDouble() * maxMovement * 0.5)
-                  .clamp(marketMin, marketMax),
-              precision,
-            )
-          : roundTo(
-              (max(open, close) + _random.nextDouble() * maxMovement * 0.5)
-                  .clamp(symbolMin, symbolMax),
-              precision,
-            );
+      final upperWick = _random.nextDouble() * (maxMovement * 0.5);
 
-      final low = isMarketSymbol
-          ? roundTo(
-              (min(open, close) - _random.nextDouble() * maxMovement * 0.5)
-                  .clamp(marketMin, marketMax),
-              precision,
-            )
-          : roundTo(
-              (min(open, close) - _random.nextDouble() * maxMovement * 0.5)
-                  .clamp(symbolMin, symbolMax),
-              precision,
-            );
+      final lowerWick = _random.nextDouble() * (maxMovement * 0.5);
+
+      final high = roundTo(
+        (max(open, close) + upperWick).clamp(minPrice, maxPrice).toDouble(),
+        precision,
+      );
+
+      final low = roundTo(
+        (min(open, close) - lowerWick).clamp(minPrice, maxPrice).toDouble(),
+        precision,
+      );
 
       final volume = 1000 + _random.nextInt(10000);
 
       bars.add([timestamp, roundTo(open, precision), high, low, close, volume]);
 
-      // Next candle starts from previous candle's close.
+      // Next candle starts from previous close.
       price = close;
+    }
+
+    // ------------------------------------------------------------
+    // CRITICAL:
+    // Save last historical close for streaming.
+    // ------------------------------------------------------------
+
+    if (bars.isNotEmpty) {
+      final lastClose = toDouble(bars.last[4]);
+
+      _livePrices[symbolId] = lastClose;
+
+      if (isSpot) {
+        _niftyLivePrice = lastClose;
+      }
     }
 
     return bars;
@@ -341,29 +386,74 @@ class MockChartDataSource {
   List<Map<String, dynamic>> generateTicks() {
     ticks.clear();
 
-    // Update NIFTY price.
-    _lastPrice += (_random.nextDouble() - 0.48) * 10;
-    _lastPrice = _lastPrice.clamp(22600.0, 22659.0);
-    final niftyLtp = double.parse(_lastPrice.toStringAsFixed(2));
+    final now = DateTime.now().millisecondsSinceEpoch;
 
-    // NIFTY / underlying tick.
+    // ============================================================
+    // 1. SPOT
+    // ============================================================
+
+    var spotPrice = _livePrices['NIFTY'] ?? _niftyLivePrice;
+
+    // Spot movement: -2 to +2
+    final spotMovement = (_random.nextDouble() - 0.5) * 4.0;
+
+    spotPrice += spotMovement;
+
+    spotPrice = spotPrice.clamp(22000.0, 23000.0).toDouble();
+
+    spotPrice = roundTo(spotPrice, precision);
+
+    // ------------------------------------------------------------
+    // Save Spot live price
+    // ------------------------------------------------------------
+
+    _niftyLivePrice = spotPrice;
+    _livePrices['NIFTY'] = spotPrice;
+
+    // ------------------------------------------------------------
+    // Spot change
+    // ------------------------------------------------------------
+
+    final previousSpot = _previousTickPrices['NIFTY'] ?? spotPrice;
+
+    final spotChange = roundTo(spotPrice - previousSpot, precision);
+
+    final spotChangePer = previousSpot != 0
+        ? roundTo((spotChange / previousSpot) * 100, 2)
+        : 0.0;
+
+    _previousTickPrices['NIFTY'] = spotPrice;
+
+    // ------------------------------------------------------------
+    // Add Spot tick
+    // ------------------------------------------------------------
+
     ticks.add({
       'symbolId': 'NIFTY',
-      'ltp': niftyLtp,
+      'ltp': spotPrice,
+
       'ltq': 10 + _random.nextInt(90),
-      'chng': roundTo(_lastPrice - defaultSpotPrice, precision),
-      'chngPer': (_random.nextDouble() - 0.48) * 10,
-      'ltt': DateTime.now().millisecondsSinceEpoch,
-      'oiChngPer': (_random.nextDouble() - 0.48) * 10,
-      'oi': (_random.nextDouble() - 0.48) * 10,
+
+      'chng': spotChange,
+      'chngPer': spotChangePer,
+
+      'ltt': now,
+
+      'oiChngPer': (_random.nextDouble() - 0.5) * 2,
+
+      'oi': _random3(),
       'volume': _random3(),
+
       'delta': _random3(),
       'gamma': _random3(),
       'theta': _random3(),
       'vega': _random3(),
     });
 
-    // Stream every option in the option chain.
+    // ============================================================
+    // 2. OPTIONS
+    // ============================================================
+
     for (final option in optionChain) {
       final symbolId =
           option['symbolId']?.toString() ??
@@ -374,27 +464,74 @@ class MockChartDataSource {
         continue;
       }
 
-      final currentLtp = toDouble(option['ltp']);
-      // Maximum variation: -50 to +50 points.
-      final optionMovement = _random.nextInt(101) - 50;
+      // ----------------------------------------------------------
+      // Get current option price
+      // ----------------------------------------------------------
 
-      var optionLtp = currentLtp + optionMovement;
+      var optionPrice = _livePrices[symbolId] ?? toDouble(option['ltp']);
 
-      // Keep it within 100–250.
-      optionLtp = 240 + toDouble((_random.nextInt(11)).toString()); // 240–250
+      if (optionPrice <= 0) {
+        optionPrice = 1.0;
+      }
+
+      // ----------------------------------------------------------
+      // Option movement: -1 to +1
+      // ----------------------------------------------------------
+
+      final optionMovement = (_random.nextDouble() - 0.5) * 2.0;
+
+      optionPrice += optionMovement;
+
+      optionPrice = max(0.05, optionPrice);
+
+      optionPrice = roundTo(optionPrice, precision);
+
+      // ----------------------------------------------------------
+      // Save option live price
+      // ----------------------------------------------------------
+
+      _livePrices[symbolId] = optionPrice;
+
+      // ----------------------------------------------------------
+      // Option change
+      // ----------------------------------------------------------
+
+      final previousOption = _previousTickPrices[symbolId] ?? optionPrice;
+
+      final optionChange = roundTo(optionPrice - previousOption, precision);
+
+      final optionChangePer = previousOption != 0
+          ? roundTo((optionChange / previousOption) * 100, 2)
+          : 0.0;
+
+      _previousTickPrices[symbolId] = optionPrice;
+
+      // ----------------------------------------------------------
+      // Add Option tick
+      // ----------------------------------------------------------
 
       ticks.add({
         ...option,
+
         'symbolId': symbolId,
-        'ltp': optionLtp,
+
+        'ltp': optionPrice,
+
         'ltq': 1 + _random.nextInt(99),
-        'chng': roundTo(optionLtp - currentLtp, precision),
-        'chngPer': (_random.nextDouble() - 0.48) * 10,
-        'ltt': DateTime.now().millisecondsSinceEpoch,
-        'oiChngPer': (_random.nextDouble() - 0.48) * 10,
+
+        'chng': optionChange,
+        'chngPer': optionChangePer,
+
+        'ltt': now,
+
+        'oiChngPer': (_random.nextDouble() - 0.5) * 2,
+
         'OI': _random3(),
-        'vWap': _random3(),
+
+        'vWap': option['vWap'] ?? optionPrice,
+
         'vol': _random3(),
+
         'delta': _random3(),
         'gamma': _random3(),
         'theta': _random3(),
@@ -402,7 +539,10 @@ class MockChartDataSource {
       });
     }
 
-    // Add future ticks
+    // ============================================================
+    // 3. FUTURES
+    // ============================================================
+
     for (final future in generateFutureSymbols()) {
       final symbolId =
           future['symbolId']?.toString() ??
@@ -413,24 +553,107 @@ class MockChartDataSource {
         continue;
       }
 
-      final currentLtp = toDouble(future['ltp']);
+      // ----------------------------------------------------------
+      // Get current Future price
+      // ----------------------------------------------------------
 
-      // Maximum variation: -50 to +50 points.
-      _lastPrice += (_random.nextDouble() - 0.48) * 10;
-      _lastPrice = _lastPrice.clamp(22600.0, 22659.0);
-      final futureLtp = double.parse(_lastPrice.toStringAsFixed(2));
+      var futurePrice = _livePrices[symbolId] ?? toDouble(future['ltp']);
+
+      // If there is no valid historical future price,
+      // start from Spot.
+      if (futurePrice <= 0) {
+        futurePrice = spotPrice;
+      }
+
+      // ----------------------------------------------------------
+      // Future movement
+      //
+      // EXACTLY the same pattern as Spot.
+      //
+      // Difference:
+      // Future movement is 2 to 7 points.
+      // ----------------------------------------------------------
+
+      final futureMovementSize = 2.0 + (_random.nextDouble() * 5.0);
+
+      final futureDirection = _random.nextBool() ? 1.0 : -1.0;
+
+      final futureMovement = futureMovementSize * futureDirection;
+
+      futurePrice += futureMovement;
+
+      // ----------------------------------------------------------
+      // Keep Future in valid range
+      // ----------------------------------------------------------
+
+      futurePrice = futurePrice.clamp(22000.0, 23000.0).toDouble();
+
+      futurePrice = roundTo(futurePrice, precision);
+
+      // ----------------------------------------------------------
+      // Save Future live price
+      // SAME PATTERN AS SPOT
+      // ----------------------------------------------------------
+
+      _livePrices[symbolId] = futurePrice;
+
+      // Also update the future map.
+      future['ltp'] = futurePrice;
+
+      // ----------------------------------------------------------
+      // Previous Future price
+      // SAME PATTERN AS SPOT
+      // ----------------------------------------------------------
+
+      final previousFuture = _previousTickPrices[symbolId] ?? futurePrice;
+
+      // ----------------------------------------------------------
+      // Future change
+      // SAME PATTERN AS SPOT
+      // ----------------------------------------------------------
+
+      final futureChange = roundTo(futurePrice - previousFuture, precision);
+
+      // ----------------------------------------------------------
+      // Future change %
+      // SAME PATTERN AS SPOT
+      // ----------------------------------------------------------
+
+      final futureChangePer = previousFuture != 0
+          ? roundTo((futureChange / previousFuture) * 100, 2)
+          : 0.0;
+
+      // ----------------------------------------------------------
+      // Save previous Future price
+      // SAME PATTERN AS SPOT
+      // ----------------------------------------------------------
+
+      _previousTickPrices[symbolId] = futurePrice;
+
+      // ----------------------------------------------------------
+      // Add Future tick
+      // ----------------------------------------------------------
 
       ticks.add({
         ...future,
+
         'symbolId': symbolId,
-        'ltp': futureLtp,
+
+        'ltp': futurePrice,
+
         'ltq': 10 + _random.nextInt(90),
-        'chng': roundTo(futureLtp - currentLtp, precision),
-        'chngPer': (_random.nextDouble() - 0.48) * 10,
-        'ltt': DateTime.now().millisecondsSinceEpoch,
-        'oiChngPer': (_random.nextDouble() - 0.48) * 10,
-        'oi': (_random.nextDouble() - 0.48) * 10,
+
+        'chng': futureChange,
+        'chngPer': futureChangePer,
+
+        'ltt': now,
+
+        'oiChngPer': (_random.nextDouble() - 0.5) * 2,
+
+        'oi': _random3(),
+
         'volume': _random3(),
+
         'delta': _random3(),
         'gamma': _random3(),
         'theta': _random3(),

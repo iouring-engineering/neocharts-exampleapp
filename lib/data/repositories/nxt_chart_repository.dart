@@ -995,4 +995,17 @@ class NxtChartRepository implements ChartInterface {
 
     _feedbackController.add(jsonEncode({'type': type, 'message': message}));
   }
+
+  @override
+  Future<String> get fundsData async {
+    return jsonEncode({"availableMargin": 347500.0, "usedMargin": 152500.0});
+  }
+
+  @override
+  bool get isMarketOrderSupported => true;
+
+  @override
+  void closeRequested() {
+    // TODO: implement closeRequested
+  }
 }
