@@ -7,7 +7,7 @@ class NxtScalperChartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NxtChartPage.scalper(
+    return NxtChartPage(
       dataProvider: NxtChartRepository(storageKey: 'scalper_chart'),
     );
   }
