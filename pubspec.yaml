@@ -57,6 +57,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  patrol: ^4.9.0
+  patrol_mcp: 0.2.0
+  patrol_cli: ^4.7.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -99,3 +102,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+patrol:
+  app_name: neocharts_exampleapp
+  android:
+    package_name: com.example.neocharts_exampleapp
+  ios:
+    bundle_id: com.example.neochartsExampleapp

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
+import 'package:nxtchart/interface.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback onToggleTheme;
   final bool isDark;
+  final ChartInterface interface;
 
   const HomePage({
     super.key,
     required this.onToggleTheme,
     required this.isDark,
+    required this.interface,
   });
 
   @override
@@ -149,8 +152,9 @@ class HomePage extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const NxtScalperChartScreen(),
+                                    builder: (context) => NxtScalperChartScreen(
+                                      dataProvider: interface,
+                                    ),
                                   ),
                                 );
                               },

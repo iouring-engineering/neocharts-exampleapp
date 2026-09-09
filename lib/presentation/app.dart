@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:neocharts_exampleapp/presentation/pages/home/home_page.dart';
+import 'package:nxtchart/interface.dart';
 
 class ChartTemplateApp extends StatefulWidget {
-  const ChartTemplateApp({super.key});
+  const ChartTemplateApp({
+    super.key,
+    this.interfaceOverride,
+    this.onInitDone,
+    this.onInitError,
+  });
+
+  /// Test-only: substitutes the [ChartInterface] this app would otherwise
+  /// construct itself, so a test can hold a reference to seed data on it.
+  final ChartInterface? interfaceOverride;
+  final void Function()? onInitDone;
+  final void Function(Object)? onInitError;
 
   @override
   State<ChartTemplateApp> createState() => _ChartTemplateAppState();
@@ -10,6 +23,22 @@ class ChartTemplateApp extends StatefulWidget {
 
 class _ChartTemplateAppState extends State<ChartTemplateApp> {
   ThemeMode _themeMode = ThemeMode.dark;
+
+  late final ChartInterface _interface =
+      widget.interfaceOverride ??
+      NxtChartRepository(storageKey: 'scalper_chart');
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onInitDone?.call();
+  }
+
+  @override
+  void dispose() {
+    _interface.dispose();
+    super.dispose();
+  }
 
   void _toggleTheme() {
     setState(() {
@@ -51,6 +80,7 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
       home: HomePage(
         onToggleTheme: _toggleTheme,
         isDark: _themeMode == ThemeMode.dark,
+        interface: _interface,
       ),
     );
   }
