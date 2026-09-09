@@ -10,6 +10,7 @@
 .history
 .svn/
 .swiftpm/
+**/xcshareddata/swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -49,3 +50,11 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Dev overrides
+pubspec_overrides.yaml
+
+# Patrol-generated bundles -- regenerated on every `patrol test` run, and
+# their own header says not to commit them.
+patrol_test/test_bundle.dart
+patrol_test/debug_test_bundle.dart

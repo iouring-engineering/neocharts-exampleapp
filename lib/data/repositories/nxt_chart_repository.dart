@@ -77,6 +77,7 @@ class NxtChartRepository implements ChartInterface {
   // ---------------------------------------------------------------------------
 
   void _initialize() {
+    _seedDemoPositions();
     _emitOrders();
     _emitPositions();
     _emitOcoOrders();
@@ -590,7 +591,7 @@ class NxtChartRepository implements ChartInterface {
           'orderAction': action.toLowerCase(),
           'productType': 'normal',
           'avgPrice': item['price'] ?? lastPrice,
-          'price': 245,
+          'price': item['price'] ?? lastPrice,
           'netQty': qty,
           'fillQty': qty,
           'ordTime': DateTime.now().toIso8601String(),
@@ -908,11 +909,7 @@ class NxtChartRepository implements ChartInterface {
     _ordersController.add(jsonEncode(_orders));
   }
 
-  void _emitPositions() {
-    if (_disposed) {
-      return;
-    }
-
+  void _seedDemoPositions() {
     final optionChain = _dataSource.optionChain;
 
     if (optionChain.isEmpty) {
@@ -921,8 +918,6 @@ class NxtChartRepository implements ChartInterface {
 
     // Pick a few actual options from the option chain.
     final selectedOptions = optionChain.take(6).toList();
-
-    final positions = <Map<String, dynamic>>[];
 
     for (var i = 0; i < selectedOptions.length; i++) {
       final option = selectedOptions[i];
@@ -949,12 +944,12 @@ class NxtChartRepository implements ChartInterface {
           ? (currentPrice - avgPrice) * netQty
           : (avgPrice - currentPrice) * netQty.abs();
 
-      positions.add({
+      _positions.add({
         'symID': symbolId,
         'displayName': option['name']?.toString() ?? symbolId,
         'netQty': netQty,
-        'avgPrice': 245,
-        'netOrgAvgPrice': 245,
+        'avgPrice': avgPrice,
+        'netOrgAvgPrice': avgPrice,
         'pnl': pnl,
         'realizedPnl': 0.0,
         'realizedOrgPnl': 0.0,
@@ -968,8 +963,52 @@ class NxtChartRepository implements ChartInterface {
         'symbol': option,
       });
     }
+  }
 
-    _positionsController.add(jsonEncode(positions));
+  void _emitPositions() {
+    if (_disposed) {
+      return;
+    }
+
+    _positionsController.add(jsonEncode(_positions));
+  }
+
+  /// Test-only seeding hook -- adds a synthetic NIFTY position so Patrol
+  /// tests can exercise position/OCO flows without waiting on the
+  /// live-streamed demo positions. avgPrice is snapped to this interface's
+  /// own tickSize, matching how a real limit/trigger price would be
+  /// validated.
+  void seedPosition({
+    int netQty = 75,
+    double? avgPrice,
+    String productType = 'normal',
+  }) {
+    final price = _snapToTick(avgPrice ?? _dataSource.lastPrice);
+
+    _positions.add({
+      'symID': 'NIFTY',
+      'displayName': 'NIFTY 50',
+      'netQty': netQty,
+      'avgPrice': price,
+      'netOrgAvgPrice': price,
+      'pnl': 0.0,
+      'realizedPnl': 0.0,
+      'realizedOrgPnl': 0.0,
+      'unrealizedPL': 0.0,
+      'mtm': 0.0,
+      'multiplier': 1.0,
+      'priceFactor': 1.0,
+      'productType': productType,
+      'symbol': jsonDecode(symbolInfo),
+    });
+
+    _emitPositions();
+  }
+
+  double _snapToTick(double raw) {
+    const tickSize = MockChartDataSource.tickSize;
+
+    return (raw / tickSize).round() * tickSize;
   }
 
   void _emitOcoOrders() {

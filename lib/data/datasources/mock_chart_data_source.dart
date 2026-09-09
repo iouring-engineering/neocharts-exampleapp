@@ -25,7 +25,6 @@ class MockChartDataSource {
   final Map<String, double> _livePrices = {};
   final Map<String, double> _previousTickPrices = {};
 
-  static const double defaultSpotPrice = 22500.0;
   static const int lotSize = 65;
   static const double tickSize = 0.05;
   static const int precision = 2;
@@ -70,9 +69,8 @@ class MockChartDataSource {
 
   final Random _random = Random();
 
-  double _lastPrice = defaultSpotPrice;
-
-  double get lastPrice => _lastPrice;
+  /// Tracks the live NIFTY spot price as streamed ticks/bars update it.
+  double get lastPrice => _livePrices['NIFTY'] ?? _niftyLivePrice;
 
   /// Latest emitted tick snapshot, refreshed by [generateTicks].
   final ticks = <Map<String, dynamic>>[];
@@ -192,7 +190,7 @@ class MockChartDataSource {
 
   double initialPriceForSymbol(String symbolId) {
     if (symbolId == 'NIFTY') {
-      return _lastPrice;
+      return lastPrice;
     }
 
     final option = optionChain.where((item) => item['id'] == symbolId);
@@ -205,15 +203,15 @@ class MockChartDataSource {
       final type = item['optType']?.toString();
 
       final intrinsic = type == 'CE'
-          ? max(0, _lastPrice - strike)
-          : max(0, strike - _lastPrice);
+          ? max(0, lastPrice - strike)
+          : max(0, strike - lastPrice);
 
       final timeValue = 80 + _random.nextDouble() * 100;
 
       return max(5, intrinsic + timeValue);
     }
 
-    return _lastPrice;
+    return lastPrice;
   }
 
   List<List<dynamic>> generateBars({
@@ -431,6 +429,7 @@ class MockChartDataSource {
     ticks.add({
       'symbolId': 'NIFTY',
       'ltp': spotPrice,
+      'dayClose': spotPrice,
 
       'ltq': 10 + _random.nextInt(90),
 
@@ -516,6 +515,7 @@ class MockChartDataSource {
         'symbolId': symbolId,
 
         'ltp': optionPrice,
+        'dayClose': optionPrice,
 
         'ltq': 1 + _random.nextInt(99),
 
@@ -640,6 +640,7 @@ class MockChartDataSource {
         'symbolId': symbolId,
 
         'ltp': futurePrice,
+        'dayClose': futurePrice,
 
         'ltq': 10 + _random.nextInt(90),
 
@@ -685,11 +686,11 @@ class MockChartDataSource {
   }
 
   List<Map<String, dynamic>> atmOptions() {
-    if (optionChain.isEmpty || _lastPrice <= 0) {
+    if (optionChain.isEmpty || lastPrice <= 0) {
       return [];
     }
 
-    final atmStrike = nearestStrike(_lastPrice);
+    final atmStrike = nearestStrike(lastPrice);
     final expiry = nearestExpiry();
 
     final ce = optionChain.firstWhere(
@@ -722,9 +723,9 @@ class MockChartDataSource {
   }
 
   int mockVolume(Map<String, dynamic> option) {
-    final strike = toInt(option['strike']) ?? nearestStrike(_lastPrice);
+    final strike = toInt(option['strike']) ?? nearestStrike(lastPrice);
 
-    final distance = (strike - nearestStrike(_lastPrice)).abs();
+    final distance = (strike - nearestStrike(lastPrice)).abs();
 
     return max(1000, 50000 - distance * 100 + _random.nextInt(20000));
   }
@@ -749,7 +750,7 @@ class MockChartDataSource {
   // ---------------------------------------------------------------------------
 
   int generateOi(int strike, String type) {
-    final distance = (strike - nearestStrike(_lastPrice)).abs();
+    final distance = (strike - nearestStrike(lastPrice)).abs();
 
     final base = max(10000, 100000 - distance * 50);
 
@@ -763,7 +764,7 @@ class MockChartDataSource {
   }
 
   Map<String, dynamic> oiAnalysisAroundAtm() {
-    final atm = nearestStrike(_lastPrice);
+    final atm = nearestStrike(lastPrice);
 
     final calls = <String, dynamic>{};
     final puts = <String, dynamic>{};
@@ -825,7 +826,7 @@ class MockChartDataSource {
     final from = now.subtract(const Duration(hours: 4));
     const interval = Duration(minutes: 1);
     final rows = <Map<String, dynamic>>[];
-    var price = _lastPrice;
+    var price = lastPrice;
     var pcr = 0.75;
 
     for (var time = from; !time.isAfter(now); time = time.add(interval)) {
@@ -869,7 +870,7 @@ class MockChartDataSource {
 
       candles.add({
         'time': time.millisecondsSinceEpoch,
-        'atmStraddlePrice': 0.75,
+        'atmStraddlePrice': roundTo(straddle, precision),
       });
     }
 
@@ -890,7 +891,10 @@ class MockChartDataSource {
     for (var time = from; !time.isAfter(now); time = time.add(interval)) {
       iv = (iv + (_random.nextDouble() - 0.5) * 0.4).clamp(12.0, 35.0);
 
-      candles.add({'time': time.millisecondsSinceEpoch, 'atmIv': 0.50});
+      candles.add({
+        'time': time.millisecondsSinceEpoch,
+        'atmIv': roundTo(iv, 2),
+      });
     }
 
     return candles;

@@ -14,6 +14,6 @@ extension StreamRateX on StreamRate {
   }
 
   Duration get interval {
-    return const Duration(milliseconds: 500);
+    return Duration(milliseconds: 1000 ~/ perSecond);
   }
 }
