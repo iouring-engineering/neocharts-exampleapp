@@ -24,19 +24,24 @@ class ChartTemplateApp extends StatefulWidget {
 class _ChartTemplateAppState extends State<ChartTemplateApp> {
   ThemeMode _themeMode = ThemeMode.dark;
 
-  late final ChartInterface _interface =
-      widget.interfaceOverride ??
-      NxtChartRepository(storageKey: 'scalper_chart');
+  ChartInterface? _interface;
 
   @override
   void initState() {
     super.initState();
-    widget.onInitDone?.call();
+    try {
+      _interface =
+          widget.interfaceOverride ??
+          NxtChartRepository(storageKey: 'scalper_chart');
+      widget.onInitDone?.call();
+    } catch (e) {
+      widget.onInitError?.call(e);
+    }
   }
 
   @override
   void dispose() {
-    _interface.dispose();
+    _interface?.dispose();
     super.dispose();
   }
 
@@ -50,6 +55,8 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
 
   @override
   Widget build(BuildContext context) {
+    final interface = _interface;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Chart Studio',
@@ -77,11 +84,15 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
         fontFamily: 'Roboto',
       ),
 
-      home: HomePage(
-        onToggleTheme: _toggleTheme,
-        isDark: _themeMode == ThemeMode.dark,
-        interface: _interface,
-      ),
+      home: interface == null
+          ? const Scaffold(
+              body: Center(child: Text('Failed to initialize the chart.')),
+            )
+          : HomePage(
+              onToggleTheme: _toggleTheme,
+              isDark: _themeMode == ThemeMode.dark,
+              interface: interface,
+            ),
     );
   }
 }
