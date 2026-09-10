@@ -1,0 +1,8 @@
+platform :ios, '13.0'
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+target 'example_ios' do
+  use_frameworks!
+  use_modular_headers!
+end

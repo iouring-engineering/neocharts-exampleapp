@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NxtChart — JS host demo</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Exposes the `_flutter.loader` global that ChartMount uses to boot
+         the SDK's compiled web bundle. Built by `fvm flutter build web` --
+         see the repo README for the build command. Served from
+         public/build_web, a symlink to ../../../build/web -- a plain
+         "../../build/web" relative path breaks under Vite's dev server,
+         which serves this app's own directory as its root, not the repo
+         root. -->
+    <script src="/build_web/flutter.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document
+    type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB"
+    version="3.0"
+    toolsVersion="23504"
+    targetRuntime="AppleCocoa Touch"
+    propertyAccessControl="none"
+    useAutolayout="YES"
+    useTraitCollections="YES"
+    useSafeAreas="YES"
+    colorMatched="YES"
+    initialViewController="BYZ-38-t0r">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn
+            identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin"
+            version="23504"/>
+        <capability
+            name="Safe area layout guides"
+            minToolsVersion="9.0"/>
+        <capability
+            name="System colors in document resources"
+            minToolsVersion="11.0"/>
+        <capability
+            name="documents saved in the Xcode 8 format"
+            minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController
+                    id="BYZ-38-t0r"
+                    customClass="ViewController"
+                    customModule="example_ios"
+                    customModuleProvider="target"
+                    sceneMemberID="viewController">
+                    <view
+                        key="view"
+                        contentMode="scaleToFill"
+                        id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button
+                                opaque="NO"
+                                contentMode="scaleToFill"
+                                contentHorizontalAlignment="center"
+                                contentVerticalAlignment="center"
+                                buttonType="system"
+                                lineBreakMode="middleTruncation"
+                                translatesAutoresizingMaskIntoConstraints="NO"
+                                id="open-chart-btn">
+                                <rect key="frame" x="147" y="393" width="99" height="50"/>
+                                <state key="normal" title="Open Chart"/>
+                                <connections>
+                                    <action
+                                        selector="openChart:"
+                                        destination="BYZ-38-t0r"
+                                        eventType="touchUpInside"
+                                        id="open-chart-action"/>
+                                </connections>
+                            </button>
+                            <button
+                                opaque="NO"
+                                contentMode="scaleToFill"
+                                contentHorizontalAlignment="center"
+                                contentVerticalAlignment="center"
+                                buttonType="system"
+                                lineBreakMode="middleTruncation"
+                                translatesAutoresizingMaskIntoConstraints="NO"
+                                id="open-scalper-btn">
+                                <rect key="frame" x="147" y="459" width="99" height="50"/>
+                                <state key="normal" title="Open Scalper"/>
+                                <connections>
+                                    <action
+                                        selector="openScalper:"
+                                        destination="BYZ-38-t0r"
+                                        eventType="touchUpInside"
+                                        id="open-scalper-action"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeAreaLayoutGuide" id="Ygk-TC-7jM"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint
+                                firstItem="open-chart-btn"
+                                firstAttribute="centerX"
+                                secondItem="8bC-Xf-vdC"
+                                secondAttribute="centerX"
+                                id="cx-btn"/>
+                            <constraint
+                                firstItem="open-chart-btn"
+                                firstAttribute="centerY"
+                                secondItem="8bC-Xf-vdC"
+                                secondAttribute="centerY"
+                                constant="-33"
+                                id="cy-btn"/>
+                            <constraint
+                                firstItem="open-chart-btn"
+                                firstAttribute="width"
+                                constant="160"
+                                id="w-btn"/>
+                            <constraint
+                                firstItem="open-chart-btn"
+                                firstAttribute="height"
+                                constant="50"
+                                id="h-btn"/>
+                            <constraint
+                                firstItem="open-scalper-btn"
+                                firstAttribute="centerX"
+                                secondItem="8bC-Xf-vdC"
+                                secondAttribute="centerX"
+                                id="cx-scalper-btn"/>
+                            <constraint
+                                firstItem="open-scalper-btn"
+                                firstAttribute="top"
+                                secondItem="open-chart-btn"
+                                secondAttribute="bottom"
+                                constant="16"
+                                id="top-scalper-btn"/>
+                            <constraint
+                                firstItem="open-scalper-btn"
+                                firstAttribute="width"
+                                constant="160"
+                                id="w-scalper-btn"/>
+                            <constraint
+                                firstItem="open-scalper-btn"
+                                firstAttribute="height"
+                                constant="50"
+                                id="h-scalper-btn"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder
+                    placeholderIdentifier="IBFirstResponder"
+                    id="dkx-z0-nzr"
+                    sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color
+                white="1"
+                alpha="1"
+                colorSpace="custom"
+                customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
