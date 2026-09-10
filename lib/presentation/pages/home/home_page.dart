@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
@@ -23,10 +24,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Non-null once a benchmark control has been touched -- the "NEO
-  // Charts" card then opens a fresh, purpose-configured interface instead
-  // of widget.interface, leaving every other (non-benchmark) flow through
-  // this page untouched.
+  // Non-null once a benchmark control has been touched -- the
+  // "NeoCharts" card then opens a fresh, purpose-configured interface
+  // instead of widget.interface, leaving every other (non-benchmark) flow
+  // through this page untouched.
   BenchmarkConfig? _benchmarkConfig;
 
   ChartInterface _resolveInterface() {
@@ -167,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                         Column(
                           children: [
                             ChartCard(
-                              title: 'NEO Charts',
+                              title: 'NeoCharts',
                               subtitle: 'Fast charts for precision entries',
                               icon: Icons.show_chart_rounded,
                               gradient: const [
@@ -188,16 +189,19 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
 
-                        const SizedBox(height: 32),
-
                         // ─────────────────────────────
-                        // BENCHMARK (Patrol perf suite)
+                        // BENCHMARK (Patrol perf suite) -- never in a
+                        // release build, so it never reaches a store
+                        // listing.
                         // ─────────────────────────────
-                        BenchmarkControlPanel(
-                          config: _benchmarkConfig ?? const BenchmarkConfig(),
-                          onChanged: (config) =>
-                              setState(() => _benchmarkConfig = config),
-                        ),
+                        if (!kReleaseMode) ...[
+                          const SizedBox(height: 32),
+                          BenchmarkControlPanel(
+                            config: _benchmarkConfig ?? const BenchmarkConfig(),
+                            onChanged: (config) =>
+                                setState(() => _benchmarkConfig = config),
+                          ),
+                        ],
 
                         const SizedBox(height: 60),
                       ],
