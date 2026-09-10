@@ -11,7 +11,7 @@
     "Flutter Dev Team": "flutter-dev@googlegroups.com"
   },
   "platforms": {
-    "ios": "13.0"
+    "ios": "15.0"
   },
   "source_files": [
     "Classes",
@@ -27,14 +27,6 @@
   },
   "dependencies": {
     "Flutter": [],
-    "firebase_analytics": [],
-    "firebase_core": [],
-    "firebase_crashlytics": [],
-    "firebase_dynamic_links": [],
-    "firebase_messaging": [],
-    "flutter_local_notifications": [],
-    "flutter_secure_storage": [],
-    "local_auth_darwin": [],
-    "path_provider_foundation": []
+    "shared_preferences_foundation": []
   }
 }

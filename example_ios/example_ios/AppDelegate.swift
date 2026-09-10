@@ -4,6 +4,8 @@ import UIKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+
     let engineGroup = FlutterEngineGroup(name: "nxt_chart", project: nil)
     lazy var chartEngine: FlutterEngine = engineGroup.makeEngine(withEntrypoint: nil, libraryURI: nil)
 
@@ -24,7 +26,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // -------------------------------------------------------------------------
 
     private var orders: [[String: Any]] = []
-    private var orderSink: FlutterEventSink?
+    fileprivate var orderSink: FlutterEventSink?
     private var orderCounter = 0
     private var tickTimer: Timer?
     private var lastPrice: Double = 22500.0
@@ -50,6 +52,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     result(self.marketTiming())
                 case "hasOCO":
                     result(false)
+                case "isMarketOrderSupported":
+                    result(true)
                 case "storageKey":
                     result("default")
                 case "underlyingSymbolInfo", "futureSymbols", "indexSymbols", "atmSymbols":
