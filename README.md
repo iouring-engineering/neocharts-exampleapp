@@ -144,17 +144,23 @@ This enables brokers to deliver a professional trading experience without having
 
 ## Example Apps
 
-This repo hosts four sibling example apps, one per integration target:
+Four sibling apps, one per integration target — clone this repo and run any of them directly:
 
-| App | Platform | Integration | Try it |
-| --- | -------- | ------------ | ------ |
-| [`example_flutter/`](example_flutter) | Flutter | Package dependency | — |
-| [`example_android/`](example_android) | Android (Kotlin) | Native add-to-app | [Google Play](https://play.google.com/store/apps/details?id=com.iouring.neocharts.example) |
-| [`example_ios/`](example_ios) | iOS (Swift) | Native add-to-app | [App Store](https://apps.apple.com/us/app/neocharts/id6808208930) |
-| [`example_web/`](example_web) | Web (JS) | Pre-built bundle | *(hosted demo coming soon)* |
+| App | Platform | Integration style |
+| --- | -------- | ------------------ |
+| [`example_flutter/`](example_flutter) | Flutter | Package dependency |
+| [`example_android/`](example_android) | Android (Kotlin) | Native add-to-app |
+| [`example_ios/`](example_ios) | iOS (Swift) | Native add-to-app |
+| [`example_web/`](example_web) | Web (JS) | Pre-built bundle |
 
 See the [docs-site Quick Start](https://docs-neocharts.iouring.com/docs/quick-start/flutter) for
 the full integration guide per platform.
+
+**See NeoCharts running in a published app:**
+
+- **Android** — [Get it on Google Play](https://play.google.com/store/apps/details?id=com.iouring.neocharts.example)
+- **iOS** — [Download on the App Store](https://apps.apple.com/us/app/neocharts/id6808208930)
+- **Web** — hosted demo coming soon
 
 ## Platform Support
 
