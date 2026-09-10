@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document
+    type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB"
+    version="3.0"
+    toolsVersion="23504"
+    targetRuntime="AppleCocoa Touch"
+    propertyAccessControl="none"
+    useAutolayout="YES"
+    useTraitCollections="YES"
+    useSafeAreas="YES"
+    colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn
+            identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin"
+            version="23504"/>
+        <capability
+            name="Safe area layout guides"
+            minToolsVersion="9.0"/>
+        <capability
+            name="System colors in document resources"
+            minToolsVersion="11.0"/>
+        <capability
+            name="documents saved in the Xcode 8 format"
+            minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="ls-scene">
+            <objects>
+                <viewController id="ls-vc" sceneMemberID="viewController">
+                    <view
+                        key="view"
+                        contentMode="scaleToFill"
+                        id="ls-view">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label
+                                opaque="NO"
+                                userInteractionEnabled="NO"
+                                contentMode="left"
+                                horizontalHuggingPriority="251"
+                                verticalHuggingPriority="251"
+                                text="NxtChart"
+                                textAlignment="center"
+                                lineBreakMode="middleTruncation"
+                                baselineAdjustment="alignBaselines"
+                                adjustsFontSizeToFit="NO"
+                                translatesAutoresizingMaskIntoConstraints="NO"
+                                id="ls-label">
+                                <rect key="frame" x="97" y="406" width="200" height="40"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="28"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeAreaLayoutGuide" id="ls-safe"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint
+                                firstItem="ls-label"
+                                firstAttribute="centerX"
+                                secondItem="ls-view"
+                                secondAttribute="centerX"
+                                id="ls-cx"/>
+                            <constraint
+                                firstItem="ls-label"
+                                firstAttribute="centerY"
+                                secondItem="ls-view"
+                                secondAttribute="centerY"
+                                id="ls-cy"/>
+                            <constraint
+                                firstItem="ls-label"
+                                firstAttribute="width"
+                                constant="200"
+                                id="ls-w"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder
+                    placeholderIdentifier="IBFirstResponder"
+                    id="ls-fr"
+                    sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color
+                white="1"
+                alpha="1"
+                colorSpace="custom"
+                customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
