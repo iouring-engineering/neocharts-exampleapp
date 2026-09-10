@@ -161,7 +161,7 @@ void assertFrameBudgetP95(BenchmarkRun run, int budgetUs) {
 
 /// Taps the [BenchmarkControlPanel] controls on the HomePage to establish
 /// a deterministic [BenchmarkConfig] before opening the chart. Must be
-/// called before tapping "NEO Charts" (e.g. before [openChartAndAwaitLoad]).
+/// called before tapping "NeoCharts" (e.g. before [openChartAndAwaitLoad]).
 Future<void> configureBenchmark(
   PatrolIntegrationTester $, {
   required DatasetSize datasetSize,

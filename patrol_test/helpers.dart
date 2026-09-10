@@ -32,7 +32,7 @@ Future<void> waitUntilAbsent(
 }
 
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
-// page's "NEO Charts" card. [interfaceOverride], when supplied, replaces the
+// page's "NeoCharts" card. [interfaceOverride], when supplied, replaces the
 // ChartInterface the app would otherwise construct itself -- e.g. a handle
 // to seed positions on via seedPosition().
 Future<void> openChartAndAwaitLoad(
@@ -49,9 +49,9 @@ Future<void> openChartAndAwaitLoad(
   );
   await completer.future;
   await $.tester.pump(const Duration(milliseconds: 300));
-  await $.tester.ensureVisible(find.text('NEO Charts'));
+  await $.tester.ensureVisible(find.text('NeoCharts'));
   await $.tester.pumpAndSettle();
-  await $('NEO Charts').tap();
+  await $('NeoCharts').tap();
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,
@@ -70,7 +70,7 @@ Future<void> closeAndReopenChart(PatrolIntegrationTester $) async {
   await waitUntilPresent($, closeBtn, timeout: const Duration(seconds: 30));
   await $.tester.tap(closeBtn);
   await $.pumpAndSettle();
-  await $('NEO Charts').tap();
+  await $('NeoCharts').tap();
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,

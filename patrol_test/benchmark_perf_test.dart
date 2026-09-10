@@ -20,7 +20,7 @@ import 'benchmark_helpers.dart';
 import 'helpers.dart';
 
 // Pumps the app and waits for it to finish initializing, without tapping
-// "NEO Charts" yet -- benchmark tests need to drive the HomePage's own
+// "NeoCharts" yet -- benchmark tests need to drive the HomePage's own
 // BenchmarkControlPanel first, unlike every other suite's
 // openChartAndAwaitLoad (which opens the chart in one shot).
 Future<void> _pumpHomeAndAwaitReady(PatrolIntegrationTester $) async {
@@ -33,15 +33,15 @@ Future<void> _pumpHomeAndAwaitReady(PatrolIntegrationTester $) async {
   );
   await completer.future;
   await $.tester.pump(const Duration(milliseconds: 300));
-  await $.tester.ensureVisible(find.text('NEO Charts'));
+  await $.tester.ensureVisible(find.text('NeoCharts'));
   await $.tester.pumpAndSettle();
 }
 
-// Taps "NEO Charts" and waits for the chart to finish its initial load --
+// Taps "NeoCharts" and waits for the chart to finish its initial load --
 // the benchmark-panel equivalent of helpers.dart's openChartAndAwaitLoad,
 // split out so configureBenchmark can run in between.
 Future<void> _openChartFromHome(PatrolIntegrationTester $) async {
-  await $('NEO Charts').tap();
+  await $('NeoCharts').tap();
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,
