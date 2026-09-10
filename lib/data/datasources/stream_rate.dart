@@ -16,4 +16,6 @@ extension StreamRateX on StreamRate {
   Duration get interval {
     return Duration(milliseconds: 1000 ~/ perSecond);
   }
+
+  String get label => '$perSecond/s';
 }

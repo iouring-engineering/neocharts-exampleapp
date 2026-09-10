@@ -246,7 +246,9 @@ class MockChartDataSource {
       barCount = ((safeTo - safeFrom) ~/ intervalMs) + 1;
     }
 
-    barCount = max(1, min(barCount, 5000));
+    // Capped at 50K -- the largest dataset size a benchmark run asks for
+    // (see benchmark_config.dart's DatasetSize).
+    barCount = max(1, min(barCount, 50000));
 
     // ------------------------------------------------------------
     // Start time
