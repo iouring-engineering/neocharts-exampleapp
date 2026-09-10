@@ -21,6 +21,7 @@ class NxtChartRepository implements ChartInterface {
     required this.storageKey,
     this.streamRate = StreamRate.r1,
     this.liveDataEnabled = true,
+    this.benchmarkBarCount,
   }) {
     _initialize();
   }
@@ -30,6 +31,12 @@ class NxtChartRepository implements ChartInterface {
 
   final StreamRate streamRate;
   final bool liveDataEnabled;
+
+  /// Overrides the chart's own requested bar count on the very first
+  /// [loadData] call, so a benchmark run can force a specific dataset size
+  /// (e.g. 10K/50K candles) regardless of what the chart's initial
+  /// viewport would otherwise ask for.
+  final int? benchmarkBarCount;
 
   final MockChartDataSource _dataSource = MockChartDataSource();
 
@@ -189,12 +196,20 @@ class NxtChartRepository implements ChartInterface {
     required int intervalSeconds,
     required int requiredBars,
   }) async {
+    // A benchmark override widens the requested window backward from `to`
+    // to fit the full bar count -- otherwise the chart's own (much
+    // narrower) requested range would still cap how many bars actually
+    // come back, regardless of requiredBars.
+    final effectiveFrom = benchmarkBarCount == null
+        ? from
+        : to - benchmarkBarCount! * intervalSeconds * 1000;
+
     final bars = _dataSource.generateBars(
       symbolId: symbolId,
-      from: from,
+      from: effectiveFrom,
       to: to,
       intervalSeconds: intervalSeconds,
-      requiredBars: requiredBars,
+      requiredBars: benchmarkBarCount ?? requiredBars,
     );
 
     return jsonEncode(bars);
@@ -372,7 +387,19 @@ class NxtChartRepository implements ChartInterface {
 
       _orders.add(order);
 
+      // Simulates an immediate fill against any existing position for this
+      // order's symbol -- add_position/exit_position both just call
+      // placeOrder, the only difference being which side of the position
+      // they place the order on. A plain order with no existing position
+      // (e.g. the standalone Orders suite) is left as a pending order only;
+      // it never opens one of its own.
+      _applyFillToPosition(
+        symbolId: symbolId,
+        signedQty: orderAction == 'buy' ? qty : -qty,
+      );
+
       _emitOrders();
+      _emitPositions();
 
       _feedback(
         type: 'positive',
@@ -769,6 +796,28 @@ class NxtChartRepository implements ChartInterface {
     if (newQty == 0) {
       _positions.removeAt(index);
     }
+  }
+
+  // Simulates an immediate fill against an *existing* position only --
+  // unlike [_upsertPosition] (used by groupAdjustOrders), a plain order
+  // with no matching position is left as a pending order and never opens
+  // one on its own, and a position that nets to zero is kept at netQty: 0
+  // rather than removed, so it genuinely flips from open to closed
+  // (Position.fromMap derives positionTypes from netQty == 0) instead of
+  // just disappearing.
+  void _applyFillToPosition({
+    required String symbolId,
+    required int signedQty,
+  }) {
+    final index = _positions.indexWhere(
+      (position) =>
+          position['symID'] == symbolId && position['productType'] == 'normal',
+    );
+    if (index == -1) return;
+
+    final position = _positions[index];
+    final newQty = (toInt(position['netQty']) ?? 0) + signedQty;
+    position['netQty'] = newQty;
   }
 
   Map<String, dynamic> _createPosition({

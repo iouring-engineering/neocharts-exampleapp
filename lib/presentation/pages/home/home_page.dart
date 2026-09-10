@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
+import 'package:neocharts_exampleapp/presentation/widgets/benchmark_control_panel.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final bool isDark;
   final ChartInterface interface;
@@ -14,6 +17,29 @@ class HomePage extends StatelessWidget {
     required this.isDark,
     required this.interface,
   });
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Non-null once a benchmark control has been touched -- the "NEO
+  // Charts" card then opens a fresh, purpose-configured interface instead
+  // of widget.interface, leaving every other (non-benchmark) flow through
+  // this page untouched.
+  BenchmarkConfig? _benchmarkConfig;
+
+  ChartInterface _resolveInterface() {
+    final config = _benchmarkConfig;
+    if (config == null) return widget.interface;
+
+    return NxtChartRepository(
+      storageKey: 'scalper_chart',
+      liveDataEnabled: config.liveDataEnabled,
+      streamRate: config.streamRate,
+      benchmarkBarCount: config.datasetSize.candleCount,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +112,7 @@ class HomePage extends StatelessWidget {
                               color: theme.cardColor,
                               borderRadius: BorderRadius.circular(14),
                               child: InkWell(
-                                onTap: onToggleTheme,
+                                onTap: widget.onToggleTheme,
                                 borderRadius: BorderRadius.circular(14),
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
@@ -153,13 +179,24 @@ class HomePage extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => NxtScalperChartScreen(
-                                      dataProvider: interface,
+                                      dataProvider: _resolveInterface(),
                                     ),
                                   ),
                                 );
                               },
                             ),
                           ],
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // ─────────────────────────────
+                        // BENCHMARK (Patrol perf suite)
+                        // ─────────────────────────────
+                        BenchmarkControlPanel(
+                          config: _benchmarkConfig ?? const BenchmarkConfig(),
+                          onChanged: (config) =>
+                              setState(() => _benchmarkConfig = config),
                         ),
 
                         const SizedBox(height: 60),
