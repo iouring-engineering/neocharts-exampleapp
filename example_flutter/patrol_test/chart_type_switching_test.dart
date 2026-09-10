@@ -34,6 +34,7 @@ void _expectRenderedChartType(GChart chart, ChartType type) {
   final line = panel.findGraphById(Constants.lineGraph)!;
   final area = panel.findGraphById(Constants.areaGraph)!;
   final ha = panel.findGraphById(Constants.haGraph)!;
+  final highLow = panel.findGraphById(Constants.highLowGraph)!;
 
   expect(
     ohlc.visible,
@@ -46,6 +47,11 @@ void _expectRenderedChartType(GChart chart, ChartType type) {
     ha.visible,
     type == ChartType.heikinAshi,
     reason: 'Heikin Ashi graph for $type',
+  );
+  expect(
+    highLow.visible,
+    type == ChartType.highLow,
+    reason: 'High-Low graph for $type',
   );
 
   if (type.usesOhlcGraph) {
