@@ -3,7 +3,7 @@
     type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB"
     version="3.0"
     toolsVersion="23504"
-    targetRuntime="AppleCocoa Touch"
+    targetRuntime="iOS.CocoaTouch"
     propertyAccessControl="none"
     useAutolayout="YES"
     useTraitCollections="YES"

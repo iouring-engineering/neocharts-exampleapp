@@ -93,13 +93,12 @@
 			buildConfigurationList = 1BAF1D332EE2F21600EBB7C8 /* Build configuration list for PBXNativeTarget "example_ios" */;
 			buildPhases = (
 				E1026CEBF6D968B23317F380 /* [CP] Check Pods Manifest.lock */,
-				71ABC8836EED98A032DBBC3C /* [CP-User] Run Flutter Build nxtchart Script */,
+				FD0BA2E62C115C27F0EFF94C /* [CP-User] Run Flutter Build nxtchart Script */,
 				1BAF1D1C2EE2F21500EBB7C8 /* Sources */,
 				1BAF1D1D2EE2F21500EBB7C8 /* Frameworks */,
 				1BAF1D1E2EE2F21500EBB7C8 /* Resources */,
-				09E6C5DCF41D48FDB483A95A /* [CP] Embed Pods Frameworks */,
-				F1DE4923DF16249F46B822AF /* [CP] Copy Pods Resources */,
-				6EA38CA507A77E657DFBB35F /* [CP-User] Embed Flutter Build nxtchart Script */,
+				6F00CEACA2E5B6FA3EC73479 /* [CP] Embed Pods Frameworks */,
+				6079116BF8923277A0A3CB54 /* [CP-User] Embed Flutter Build nxtchart Script */,
 			);
 			buildRules = (
 			);
@@ -158,7 +157,17 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		09E6C5DCF41D48FDB483A95A /* [CP] Embed Pods Frameworks */ = {
+		6079116BF8923277A0A3CB54 /* [CP-User] Embed Flutter Build nxtchart Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "[CP-User] Embed Flutter Build nxtchart Script";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nset -u\nsource \"${SRCROOT}/../../.ios/Flutter/flutter_export_environment.sh\"\nexport VERBOSE_SCRIPT_LOGGING=1 && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/xcode_backend.sh embed_and_thin";
+		};
+		6F00CEACA2E5B6FA3EC73479 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -174,26 +183,6 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-example_ios/Pods-example_ios-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		6EA38CA507A77E657DFBB35F /* [CP-User] Embed Flutter Build nxtchart Script */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			name = "[CP-User] Embed Flutter Build nxtchart Script";
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\nset -u\nsource \"${SRCROOT}/../../.ios/Flutter/flutter_export_environment.sh\"\nexport VERBOSE_SCRIPT_LOGGING=1 && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/xcode_backend.sh embed_and_thin";
-		};
-		71ABC8836EED98A032DBBC3C /* [CP-User] Run Flutter Build nxtchart Script */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			name = "[CP-User] Run Flutter Build nxtchart Script";
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\nset -u\nsource \"${SRCROOT}/../../.ios/Flutter/flutter_export_environment.sh\"\nexport VERBOSE_SCRIPT_LOGGING=1 && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/xcode_backend.sh build";
 		};
 		E1026CEBF6D968B23317F380 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -217,22 +206,15 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F1DE4923DF16249F46B822AF /* [CP] Copy Pods Resources */ = {
+		FD0BA2E62C115C27F0EFF94C /* [CP-User] Run Flutter Build nxtchart Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-example_ios/Pods-example_ios-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-example_ios/Pods-example_ios-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
+			name = "[CP-User] Run Flutter Build nxtchart Script";
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-example_ios/Pods-example_ios-resources.sh\"\n";
-			showEnvVarsInLog = 0;
+			shellScript = "set -e\nset -u\nsource \"${SRCROOT}/../../.ios/Flutter/flutter_export_environment.sh\"\nexport VERBOSE_SCRIPT_LOGGING=1 && \"$FLUTTER_ROOT\"/packages/flutter_tools/bin/xcode_backend.sh build";
 		};
 /* End PBXShellScriptBuildPhase section */
 

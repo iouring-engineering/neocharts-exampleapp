@@ -1,0 +1,5 @@
+# Xcode build output / per-user state (Pods/ itself IS tracked in this repo)
+build_out/
+**/DerivedData/
+**/xcuserdata/
+.DS_Store

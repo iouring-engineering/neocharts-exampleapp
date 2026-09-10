@@ -8,6 +8,7 @@ import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import com.example.example_android.databinding.ActivityMainBinding
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.FlutterEngineGroup
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity() {
                 "optionSymbols" -> result.success("[]")
                 "marketTiming" -> result.success(marketTiming())
                 "hasOCO" -> result.success(false)
+                "isMarketOrderSupported" -> result.success(true)
                 "storageKey" -> result.success("default")
                 "underlyingSymbolInfo" -> result.success(null)
                 "futureSymbols" -> result.success(null)
