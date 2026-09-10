@@ -142,17 +142,38 @@ This enables brokers to deliver a professional trading experience without having
 
 ---
 
+## Example Apps
+
+Four sibling apps, one per integration target — clone this repo and run any of them directly:
+
+| App | Platform | Integration style |
+| --- | -------- | ------------------ |
+| [`example_flutter/`](example_flutter) | Flutter | Package dependency |
+| [`example_android/`](example_android) | Android (Kotlin) | Native add-to-app |
+| [`example_ios/`](example_ios) | iOS (Swift) | Native add-to-app |
+| [`example_web/`](example_web) | Web (JS) | Pre-built bundle |
+
+See the [docs-site Quick Start](https://docs-neocharts.iouring.com/docs/quick-start/flutter) for
+the full integration guide per platform.
+
+**See NeoCharts running in a published app:**
+
+- **Android** — [Get it on Google Play](https://play.google.com/store/apps/details?id=com.iouring.neocharts.example)
+- **iOS** — [Download on the App Store](https://apps.apple.com/us/app/neocharts/id6808208930)
+- **Web** — hosted demo coming soon
+
 ## Platform Support
 
-The mock integration is designed around the major mobile platforms used by modern brokers:
+The mock integration is designed around the major platforms used by modern brokers:
 
 | Platform    | Technology |
 | ----------- | ---------- |
 | **Flutter** | Dart       |
 | **Android** | Kotlin     |
 | **iOS**     | Swift      |
+| **Web**     | JavaScript |
 
-NeoCharts enables brokers to work with their existing trading infrastructure while delivering a consistent charting experience across mobile platforms.
+NeoCharts enables brokers to work with their existing trading infrastructure while delivering a consistent charting experience across every platform.
 
 ---
 
@@ -185,9 +206,9 @@ Traders can:
 
 ## At a Glance
 
-| **40+**              | **15+**       | **5+**      | **3**            |
-| -------------------- | ------------- | ----------- | ---------------- |
-| Technical Indicators | Drawing Tools | Chart Types | Mobile Platforms |
+| **40+**              | **15+**       | **5+**      | **4**      |
+| -------------------- | ------------- | ----------- | ---------- |
+| Technical Indicators | Drawing Tools | Chart Types | Platforms  |
 
 ---
 
