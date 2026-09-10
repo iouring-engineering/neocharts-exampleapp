@@ -91,7 +91,7 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
           : HomePage(
               onToggleTheme: _toggleTheme,
               isDark: _themeMode == ThemeMode.dark,
-              interface: interface,
+              interfaceOverride: widget.interfaceOverride,
             ),
     );
   }

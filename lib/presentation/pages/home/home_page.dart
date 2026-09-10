@@ -10,13 +10,18 @@ import 'package:nxtchart/interface.dart';
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final bool isDark;
-  final ChartInterface interface;
+
+  /// Test-only: a pre-seeded interface a test still holds a reference to
+  /// (e.g. after calling seedPosition()) -- reused verbatim, since the
+  /// test's setup already happened on that exact object. Null for real
+  /// end-user usage, where each chart open gets its own fresh instance.
+  final ChartInterface? interfaceOverride;
 
   const HomePage({
     super.key,
     required this.onToggleTheme,
     required this.isDark,
-    required this.interface,
+    this.interfaceOverride,
   });
 
   @override
@@ -26,20 +31,28 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   // Non-null once a benchmark control has been touched -- the
   // "NeoCharts" card then opens a fresh, purpose-configured interface
-  // instead of widget.interface, leaving every other (non-benchmark) flow
-  // through this page untouched.
+  // instead.
   BenchmarkConfig? _benchmarkConfig;
 
   ChartInterface _resolveInterface() {
     final config = _benchmarkConfig;
-    if (config == null) return widget.interface;
+    if (config != null) {
+      return NxtChartRepository(
+        storageKey: 'scalper_chart',
+        liveDataEnabled: config.liveDataEnabled,
+        streamRate: config.streamRate,
+        benchmarkBarCount: config.datasetSize.candleCount,
+      );
+    }
 
-    return NxtChartRepository(
-      storageKey: 'scalper_chart',
-      liveDataEnabled: config.liveDataEnabled,
-      streamRate: config.streamRate,
-      benchmarkBarCount: config.datasetSize.candleCount,
-    );
+    // NxtChartPage.dispose() disposes whatever interface it was given --
+    // closing the chart and reopening the same (now-disposed) instance
+    // left every stream permanently dead (LTP/Chng% frozen at their last
+    // value forever). A real end-user open gets a brand new session each
+    // time; a test's pre-seeded override is reused as-is, since it never
+    // reopens within the same test.
+    return widget.interfaceOverride ??
+        NxtChartRepository(storageKey: 'scalper_chart');
   }
 
   @override
