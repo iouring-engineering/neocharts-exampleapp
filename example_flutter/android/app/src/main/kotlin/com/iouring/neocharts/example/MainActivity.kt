@@ -1,4 +1,4 @@
-package com.example.neocharts_exampleapp
+package com.iouring.neocharts.example
 
 import io.flutter.embedding.android.FlutterActivity
 
