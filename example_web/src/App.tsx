@@ -1,5 +1,4 @@
 import { ChartMount } from './ChartMount'
-import { Landing } from './Landing'
 import { nxtChartHost, startMockFeeds } from './nxtChartHost'
 
 // Must be set before `flutter.js` finishes loading and calls into it --
@@ -8,8 +7,6 @@ import { nxtChartHost, startMockFeeds } from './nxtChartHost'
 window.NxtChartHost = nxtChartHost
 startMockFeeds()
 
-const chosenRoute = location.hash === '#/terminal'
-
 export default function App() {
-  return chosenRoute ? <ChartMount /> : <Landing />
+  return <ChartMount />
 }
