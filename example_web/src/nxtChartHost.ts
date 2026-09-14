@@ -317,10 +317,10 @@ export function startMockFeeds(): void {
 
 export const nxtChartHost: NxtChartHost = {
   get symbolInfo() { return symbolInfoJson },
-  get underlyingSymbolInfo() { return null },
+  get underlyingSymbolInfo() { return '' }, // empty for this equity
   get optionSymbols() { return optionSymbolsJson },
-  get futureSymbols() { return null },
-  get indexSymbols() { return null },
+  get futureSymbols() { return '[]' },
+  get indexSymbols() { return '[]' },
   get marketTiming() { return marketTimingJson },
   get hasOCO() { return true },
   get isMarketOrderSupported() { return true },
