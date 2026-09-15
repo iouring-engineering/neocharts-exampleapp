@@ -160,7 +160,7 @@ the full integration guide per platform.
 
 - **Android** — [Get it on Google Play](https://play.google.com/store/apps/details?id=com.iouring.neocharts.example)
 - **iOS** — [Download on the App Store](https://apps.apple.com/us/app/neocharts/id6808208930)
-- **Web** — hosted demo coming soon
+- **Web** — [Try the live demo](https://demo-neocharts.iouring.com/)
 
 ## Platform Support
 
