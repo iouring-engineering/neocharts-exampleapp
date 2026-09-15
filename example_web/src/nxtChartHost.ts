@@ -24,6 +24,7 @@ export interface NxtChartHost {
   readonly indexSymbols: string | null
   readonly marketTiming: string
   readonly hasOCO: boolean
+  readonly isMarketOrderSupported: boolean
   readonly storageKey: string
   readonly primaryColor: string | null
   readonly onPrimaryColor: string | null
@@ -56,6 +57,7 @@ export interface NxtChartHost {
   fetchPcrIntraday(): Promise<string>
   fetchAtmStraddleIntraday(): Promise<string>
   fetchAtmIvIntraday(): Promise<string>
+  fundsData(): Promise<string>
 
   placeOrder(params: string): void
   modifyOrder(params: string): void
@@ -191,6 +193,9 @@ function fetchOptionDetailsFor(): string {
 
 let price = 22500
 let orderCounter = 2
+let ocoGroupCounter = 1
+let alertCounter = 0
+const subscribedSymbols = new Set<string>()
 
 // Seeded so the orders/positions/OCO streams have real content from the
 // start, not just after a user action.
@@ -217,11 +222,8 @@ const positions = [
     netQty: 50,
     avgPrice: 22450.0,
     netOrgAvgPrice: 22450.0,
-    pnl: 250.0,
     realizedPnl: 0.0,
     realizedOrgPnl: 0.0,
-    unrealizedPL: 250.0,
-    mtm: 250.0,
     multiplier: 1.0,
     priceFactor: 1.0,
     productType: 'intraday',
@@ -229,7 +231,7 @@ const positions = [
   },
 ]
 
-const ocoOrders = [
+const ocoOrders: Record<string, unknown>[] = [
   {
     groupId: 'OCO001',
     symID: 'NIFTY',
@@ -241,6 +243,22 @@ const ocoOrders = [
     target: { type: 'limit', side: 'sell', triggerPrice: 22700, qty: 50, price: 22700, fillQty: 0 },
   },
 ]
+
+const alerts: Record<string, unknown>[] = []
+
+// 11 strikes centered on the ATM strike, per fetchOIAnalysis's documented
+// contract (the SDK expects the host to derive this window itself).
+const oiStrikes = strikes.filter((s) => Math.abs(s - atmStrike) <= 500)
+
+function makeOISide(): Record<string, { oi: number; oiChg: number; prevOi: number }> {
+  const side: Record<string, { oi: number; oiChg: number; prevOi: number }> = {}
+  for (const strike of oiStrikes) {
+    const oi = 50000 + Math.floor(Math.random() * 50000)
+    const oiChg = Math.floor((Math.random() - 0.5) * 10000)
+    side[String(strike)] = { oi, oiChg, prevOi: oi - oiChg }
+  }
+  return side
+}
 
 function makeBars(count: number, intervalMs: number, to: number): number[][] {
   const bars: number[][] = []
@@ -266,8 +284,10 @@ function dispatch(name: string, detail: unknown): void {
 
 /** Starts the demo's background tick/seed-data timers. Call once. */
 export function startMockFeeds(): void {
-  // Live tick, once a second.
+  // Live tick, once a second — only once something has actually subscribed,
+  // matching subscribeMarketData/unsubscribeMarketData below.
   setInterval(() => {
+    if (!subscribedSymbols.has('NIFTY')) return
     price += (Math.random() - 0.48) * 10
     price = Math.max(18000, Math.min(28000, price))
     const ltp = Math.round(price * 100) / 100
@@ -297,12 +317,13 @@ export function startMockFeeds(): void {
 
 export const nxtChartHost: NxtChartHost = {
   get symbolInfo() { return symbolInfoJson },
-  get underlyingSymbolInfo() { return null },
+  get underlyingSymbolInfo() { return '' }, // empty for this equity
   get optionSymbols() { return optionSymbolsJson },
-  get futureSymbols() { return null },
-  get indexSymbols() { return null },
+  get futureSymbols() { return '[]' },
+  get indexSymbols() { return '[]' },
   get marketTiming() { return marketTimingJson },
   get hasOCO() { return true },
+  get isMarketOrderSupported() { return true },
   get storageKey() { return 'js-host-demo' },
   // Optional host branding — any real host can set its own colors here.
   get primaryColor() { return '#2EA7E0' },
@@ -334,14 +355,29 @@ export const nxtChartHost: NxtChartHost = {
       : []
     return Promise.resolve(JSON.stringify(matches))
   },
-  // Not seeded with mock data in this demo — a real host resolves these
-  // from its own OI/PCR/IV data source.
-  fetchOIAnalysis() { return Promise.resolve(null) },
-  fetchOIChange() { return Promise.resolve(null) },
-  fetchOI() { return Promise.resolve(null) },
+  fetchOIAnalysis() {
+    return Promise.resolve(JSON.stringify({ calls: makeOISide(), puts: makeOISide() }))
+  },
+  fetchOIChange() {
+    const toChangeOnly = (side: Record<string, { oiChg: number }>) =>
+      Object.fromEntries(Object.entries(side).map(([strike, v]) => [strike, v.oiChg]))
+    return Promise.resolve(
+      JSON.stringify({ calls: toChangeOnly(makeOISide()), puts: toChangeOnly(makeOISide()) }),
+    )
+  },
+  fetchOI() {
+    const toOiOnly = (side: Record<string, { oi: number }>) =>
+      Object.fromEntries(Object.entries(side).map(([strike, v]) => [strike, v.oi]))
+    return Promise.resolve(
+      JSON.stringify({ calls: toOiOnly(makeOISide()), puts: toOiOnly(makeOISide()) }),
+    )
+  },
   fetchPcrIntraday() { return Promise.resolve('[]') },
   fetchAtmStraddleIntraday() { return Promise.resolve('{}') },
   fetchAtmIvIntraday() { return Promise.resolve('[]') },
+  fundsData() {
+    return Promise.resolve(JSON.stringify({ availableMargin: 347500.0, usedMargin: 152500.0 }))
+  },
 
   placeOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
@@ -383,18 +419,86 @@ export const nxtChartHost: NxtChartHost = {
     dispatch('nxtchart:orders', orders)
     dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'Order cancelled' })
   },
-  placeOCOOrder() {},
-  modifyOCOOrder() {},
-  cancelOCOOrder() {},
-  groupAdjustOrders() {},
+  placeOCOOrder(params) {
+    const p = JSON.parse(params) as Record<string, unknown>
+    ocoGroupCounter++
+    const groupId = (p.groupId as string) ?? `OCO${String(ocoGroupCounter).padStart(3, '0')}`
+    ocoOrders.push({
+      groupId,
+      symID: p.symID,
+      name: p.symID,
+      exchange: 'NSE',
+      side: p.side,
+      productType: p.productType,
+      stopLoss: { type: 'stopLoss', side: p.side, triggerPrice: p.stopPrice, qty: p.stopQty, price: p.stopPrice, fillQty: 0 },
+      target: { type: 'limit', side: p.side, triggerPrice: p.targetTriggerPrice, qty: p.targetQty, price: p.targetPrice, fillQty: 0 },
+    })
+    dispatch('nxtchart:ocoOrders', ocoOrders)
+    dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'OCO order placed' })
+  },
+  modifyOCOOrder(params) {
+    const p = JSON.parse(params) as Record<string, unknown>
+    const idx = ocoOrders.findIndex((o) => o.groupId === p.groupId)
+    if (idx !== -1) {
+      ocoOrders[idx] = {
+        ...ocoOrders[idx],
+        side: p.side,
+        productType: p.productType,
+        stopLoss: { type: 'stopLoss', side: p.side, triggerPrice: p.stopPrice, qty: p.stopQty, price: p.stopPrice, fillQty: 0 },
+        target: { type: 'limit', side: p.side, triggerPrice: p.targetTriggerPrice, qty: p.targetQty, price: p.targetPrice, fillQty: 0 },
+      }
+      dispatch('nxtchart:ocoOrders', ocoOrders)
+    }
+  },
+  cancelOCOOrder(groupId) {
+    const idx = ocoOrders.findIndex((o) => o.groupId === groupId)
+    if (idx !== -1) ocoOrders.splice(idx, 1)
+    dispatch('nxtchart:ocoOrders', ocoOrders)
+    dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'OCO order cancelled' })
+  },
+  groupAdjustOrders() {
+    // Exiting held legs and adding new ones from the option chain touches
+    // positions, orders, and OCO groups together -- out of scope for this
+    // demo's mock state. Acknowledge the action so the UI doesn't hang.
+    dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Adjustment submitted' })
+  },
   closeRequested() {
     location.hash = ''
     location.reload()
   },
-  modifyAlert() {},
-  createAlert() {},
-  deleteAlert() {},
+  createAlert(params) {
+    const p = JSON.parse(params) as Record<string, unknown>
+    alertCounter++
+    alerts.push({
+      alertId: `ALERT${String(alertCounter).padStart(3, '0')}`,
+      symbolInfo: { id: p.symbolId, name: p.symbolId },
+      triggerPrice: p.triggerPrice,
+      enabled: true,
+      triggered: false,
+      createdAt: Date.now(),
+    })
+    dispatch('nxtchart:alerts', alerts)
+    dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Alert created' })
+  },
+  modifyAlert(params) {
+    const p = JSON.parse(params) as Record<string, unknown>
+    const idx = alerts.findIndex((a) => a.alertId === p.alertId)
+    if (idx !== -1) {
+      alerts[idx] = { ...alerts[idx], triggerPrice: p.triggerPrice }
+      dispatch('nxtchart:alerts', alerts)
+    }
+  },
+  deleteAlert(alertId) {
+    const idx = alerts.findIndex((a) => a.alertId === alertId)
+    if (idx !== -1) alerts.splice(idx, 1)
+    dispatch('nxtchart:alerts', alerts)
+    dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'Alert deleted' })
+  },
 
-  subscribeMarketData() {},
-  unsubscribeMarketData() {},
+  subscribeMarketData(symbols) {
+    for (const id of JSON.parse(symbols) as string[]) subscribedSymbols.add(id)
+  },
+  unsubscribeMarketData() {
+    subscribedSymbols.clear()
+  },
 }
