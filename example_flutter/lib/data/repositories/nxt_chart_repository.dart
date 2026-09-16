@@ -1093,6 +1093,18 @@ class NxtChartRepository implements ChartInterface {
   bool get isMarketOrderSupported => true;
 
   @override
+  Map<Segment, List<String>> get productTypesBySegment => {
+    Segment.future: ['normal', 'intraday'],
+    Segment.option: ['normal', 'intraday'],
+  };
+
+  @override
+  Map<Segment, String> get defaultProductTypeBySegment => {
+    Segment.future: 'normal',
+    Segment.option: 'normal',
+  };
+
+  @override
   void closeRequested() {
     // TODO: implement closeRequested
   }

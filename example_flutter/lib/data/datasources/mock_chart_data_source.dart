@@ -111,6 +111,7 @@ class MockChartDataSource {
           'exchange': 'NSE',
           'strike': strike.toString(),
           'optType': type,
+          'segment': 'OPT',
           'weekly': 'N',
         });
       }
@@ -131,6 +132,7 @@ class MockChartDataSource {
         'tickSize': tickSize,
         'expiry': expiry,
         'exchange': 'NSE',
+        'segment': 'FUT',
       },
     ];
   }
