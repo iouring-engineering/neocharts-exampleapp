@@ -42,96 +42,9 @@
                         id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <button
-                                opaque="NO"
-                                contentMode="scaleToFill"
-                                contentHorizontalAlignment="center"
-                                contentVerticalAlignment="center"
-                                buttonType="system"
-                                lineBreakMode="middleTruncation"
-                                translatesAutoresizingMaskIntoConstraints="NO"
-                                id="open-chart-btn">
-                                <rect key="frame" x="147" y="393" width="99" height="50"/>
-                                <state key="normal" title="Open Chart"/>
-                                <connections>
-                                    <action
-                                        selector="openChart:"
-                                        destination="BYZ-38-t0r"
-                                        eventType="touchUpInside"
-                                        id="open-chart-action"/>
-                                </connections>
-                            </button>
-                            <button
-                                opaque="NO"
-                                contentMode="scaleToFill"
-                                contentHorizontalAlignment="center"
-                                contentVerticalAlignment="center"
-                                buttonType="system"
-                                lineBreakMode="middleTruncation"
-                                translatesAutoresizingMaskIntoConstraints="NO"
-                                id="open-scalper-btn">
-                                <rect key="frame" x="147" y="459" width="99" height="50"/>
-                                <state key="normal" title="Open Scalper"/>
-                                <connections>
-                                    <action
-                                        selector="openScalper:"
-                                        destination="BYZ-38-t0r"
-                                        eventType="touchUpInside"
-                                        id="open-scalper-action"/>
-                                </connections>
-                            </button>
-                        </subviews>
+                        <subviews/>
                         <viewLayoutGuide key="safeAreaLayoutGuide" id="Ygk-TC-7jM"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                        <constraints>
-                            <constraint
-                                firstItem="open-chart-btn"
-                                firstAttribute="centerX"
-                                secondItem="8bC-Xf-vdC"
-                                secondAttribute="centerX"
-                                id="cx-btn"/>
-                            <constraint
-                                firstItem="open-chart-btn"
-                                firstAttribute="centerY"
-                                secondItem="8bC-Xf-vdC"
-                                secondAttribute="centerY"
-                                constant="-33"
-                                id="cy-btn"/>
-                            <constraint
-                                firstItem="open-chart-btn"
-                                firstAttribute="width"
-                                constant="160"
-                                id="w-btn"/>
-                            <constraint
-                                firstItem="open-chart-btn"
-                                firstAttribute="height"
-                                constant="50"
-                                id="h-btn"/>
-                            <constraint
-                                firstItem="open-scalper-btn"
-                                firstAttribute="centerX"
-                                secondItem="8bC-Xf-vdC"
-                                secondAttribute="centerX"
-                                id="cx-scalper-btn"/>
-                            <constraint
-                                firstItem="open-scalper-btn"
-                                firstAttribute="top"
-                                secondItem="open-chart-btn"
-                                secondAttribute="bottom"
-                                constant="16"
-                                id="top-scalper-btn"/>
-                            <constraint
-                                firstItem="open-scalper-btn"
-                                firstAttribute="width"
-                                constant="160"
-                                id="w-scalper-btn"/>
-                            <constraint
-                                firstItem="open-scalper-btn"
-                                firstAttribute="height"
-                                constant="50"
-                                id="h-scalper-btn"/>
-                        </constraints>
                     </view>
                 </viewController>
                 <placeholder

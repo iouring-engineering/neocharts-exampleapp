@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Example_android" parent="Theme.AppCompat.Light.DarkActionBar">
+    <!-- NoActionBar: home_page.dart's Scaffold has no appBar, and neither
+         iOS nor Web render one; matches parity across all 4 apps. -->
+    <style name="Theme.Example_android" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/purple_500</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorSecondary">@color/teal_200</item>

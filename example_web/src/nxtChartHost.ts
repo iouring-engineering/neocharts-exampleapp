@@ -190,8 +190,7 @@ export const nxtChartHost: NxtChartHost = {
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Adjustment submitted' })
   },
   closeRequested() {
-    location.hash = ''
-    location.reload()
+    location.href = location.pathname
   },
   createAlert(params) {
     const p = JSON.parse(params) as Record<string, unknown>

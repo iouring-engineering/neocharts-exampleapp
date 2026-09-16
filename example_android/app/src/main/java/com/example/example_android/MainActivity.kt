@@ -5,8 +5,10 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.example.example_android.databinding.ActivityMainBinding
+import com.example.example_android.ui.theme.Example_androidTheme
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -19,15 +21,17 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private lateinit var mockData: MockDataSource
 
+    // Tracks whichever FlutterActivity (chart or scalper) is currently on
+    // screen, so the "closeRequested" channel call -- which arrives on the
+    // engine's messenger, not tied to a specific Activity instance -- knows
+    // which one to finish.
     private var activeChartActivity: Activity? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         mockData = MockDataSource(applicationContext)
 
         application.registerActivityLifecycleCallbacks(
@@ -48,11 +52,14 @@ class MainActivity : AppCompatActivity() {
 
         warmUpEngines()
 
-        binding.openFlutterButton.setOnClickListener {
-            startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
-        }
-        binding.openScalperButton.setOnClickListener {
-            startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
+        setContent {
+            Example_androidTheme(dynamicColor = false) {
+                LandingScreen(
+                    onOpenChart = {
+                        startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
+                    }
+                )
+            }
         }
     }
 
