@@ -1,0 +1,28 @@
+{
+  "seedOcoOrders": [
+    {
+      "groupId": "OCO001",
+      "symID": "NIFTY",
+      "name": "NIFTY 50",
+      "exchange": "NSE",
+      "side": "sell",
+      "productType": "intraday",
+      "stopLoss": {
+        "type": "stopLoss",
+        "side": "sell",
+        "triggerPrice": 22300,
+        "qty": 50,
+        "price": 22290,
+        "fillQty": 0
+      },
+      "target": {
+        "type": "limit",
+        "side": "sell",
+        "triggerPrice": 22700,
+        "qty": 50,
+        "price": 22700,
+        "fillQty": 0
+      }
+    }
+  ]
+}

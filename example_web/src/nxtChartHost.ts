@@ -3,18 +3,31 @@
 // data -- the shape (getters, methods, `nxtchart:<name>` CustomEvents) is
 // the actual contract `lib/src/channel/js_chart_interface.dart` reads.
 
-interface SymbolInfo {
-  id: string
-  name: string
-  lotSize: number
-  precision: number
-  tickSize: number
-  exchange?: string
-  expiry?: string
-  strike?: string
-  optType?: 'CE' | 'PE'
-  weekly?: 'Y' | 'N'
-}
+import {
+  atmSymbolsJson,
+  chartTopOptionsJson,
+  fetchAtmIvIntradayJson,
+  fetchAtmStraddleIntradayJson,
+  fetchOIAnalysisJson,
+  fetchOIChangeJson,
+  fetchOIJson,
+  fetchOptionDetailsJson,
+  fetchPcrIntradayJson,
+  futureSymbolsJson,
+  indexSymbolsJson,
+  loadMockData,
+  makeBars,
+  marketTimingJson,
+  nextTicks,
+  optionSymbolsJson,
+  searchSymbols,
+  seedOcoOrders,
+  seedOrders,
+  seedPositions,
+  symbolInfoJson,
+} from './mockDataSource'
+
+export const THEME_STORAGE_KEY = 'nxtchart-demo-theme'
 
 export interface NxtChartHost {
   readonly symbolInfo: string
@@ -81,418 +94,126 @@ declare global {
   }
 }
 
-const LOT_SIZE = 50
-const PRECISION = 2
-const TICK_SIZE = 0.05
-export const THEME_STORAGE_KEY = 'nxtchart-demo-theme'
-
-const symbolInfoObj: SymbolInfo = {
-  id: 'NIFTY',
-  name: 'NIFTY 50',
-  lotSize: LOT_SIZE,
-  precision: PRECISION,
-  tickSize: TICK_SIZE,
-}
-const symbolInfoJson = JSON.stringify(symbolInfoObj)
-
-const marketTimingJson = JSON.stringify({
-  timezone: 'Asia/Kolkata',
-  sessions: [
-    ['0915-1530'], // Monday
-    ['0915-1530'], // Tuesday
-    ['0915-1530'], // Wednesday
-    ['0915-1530'], // Thursday
-    ['0915-1530'], // Friday
-    [], // Saturday
-    [], // Sunday
-  ],
-  holidays: [] as string[],
-  special: {} as Record<string, string[]>,
-})
-
-const MONTH_CODES = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-]
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0')
+function dispatch(eventName: string, detail: unknown): void {
+  window.dispatchEvent(new CustomEvent(eventName, { detail: JSON.stringify(detail) }))
 }
 
-function nextThursdays(count: number): Date[] {
-  const dates: Date[] = []
-  let day = new Date()
-  while (dates.length < count) {
-    day = new Date(day.getTime() + 86400000)
-    if (day.getDay() === 4) dates.push(new Date(day))
-  }
-  return dates
-}
-
-// "DD-MM-YYYY HH:mm:ss" — matches lib/src/extensions/string_x.dart's
-// formatTime(), not ISO-8601 (see trade_interface.dart's ordTime doc).
-function formatOrdTime(d: Date): string {
-  return (
-    `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()} ` +
-    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
-  )
-}
-
-function expiryStr(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function expiryId(d: Date): string {
-  return `${pad2(d.getDate())}${MONTH_CODES[d.getMonth()]}${d.getFullYear() % 100}`
-}
-
-function makeOptionContract(expiry: Date, strike: number, optType: 'CE' | 'PE'): SymbolInfo {
-  return {
-    id: `NIFTY${expiryId(expiry)}${strike}${optType}`,
-    name: `NIFTY ${strike} ${optType}`,
-    precision: PRECISION,
-    lotSize: LOT_SIZE,
-    tickSize: TICK_SIZE,
-    expiry: expiryStr(expiry),
-    exchange: 'NSE',
-    strike: String(strike),
-    optType,
-    weekly: 'N',
-  }
-}
-
-const expiries = nextThursdays(3)
-const strikes: number[] = []
-for (let s = 21000; s <= 24000; s += 100) strikes.push(s)
-
-const optionChain: SymbolInfo[] = []
-for (const expiry of expiries) {
-  for (const strike of strikes) {
-    optionChain.push(makeOptionContract(expiry, strike, 'CE'))
-    optionChain.push(makeOptionContract(expiry, strike, 'PE'))
-  }
-}
-const optionSymbolsJson = JSON.stringify(optionChain)
-
-const nearestExpiry = expiries[0]
-const atmStrike = 22500
-const atmCall = makeOptionContract(nearestExpiry, atmStrike, 'CE')
-const atmPut = makeOptionContract(nearestExpiry, atmStrike, 'PE')
-const atmSymbolsJson = JSON.stringify([atmCall, atmPut])
-
-const topOptionsJson = JSON.stringify([
-  { symId: makeOptionContract(nearestExpiry, 22600, 'CE').id, name: 'NIFTY 22600 CE', optType: 'CE', exchange: 'NSE' },
-  { symId: makeOptionContract(nearestExpiry, 22400, 'PE').id, name: 'NIFTY 22400 PE', optType: 'PE', exchange: 'NSE' },
-  { symId: atmCall.id, name: atmCall.name, optType: 'CE', exchange: 'NSE' },
-  { symId: atmPut.id, name: atmPut.name, optType: 'PE', exchange: 'NSE' },
-])
-
-function fetchOptionDetailsFor(): string {
-  return JSON.stringify([symbolInfoObj, ...optionChain])
-}
-
-let price = 22500
-let orderCounter = 2
-let ocoGroupCounter = 1
+let orderCounter = 0
+let ocoGroupCounter = 0
 let alertCounter = 0
 const subscribedSymbols = new Set<string>()
-
-// Seeded so the orders/positions/OCO streams have real content from the
-// start, not just after a user action.
-const orders: Record<string, unknown>[] = [
-  {
-    orderID: 'ORD001',
-    type: 'limit',
-    orderAction: 'buy',
-    productType: 'intraday',
-    avgPrice: 22400,
-    netQty: 50,
-    fillQty: 0,
-    ordTime: formatOrdTime(new Date()),
-    orderStatus: 'open',
-    triggerPrice: 0,
-    symbol: symbolInfoObj,
-  },
-]
-
-const positions = [
-  {
-    symID: 'NIFTY',
-    displayName: 'NIFTY 50',
-    netQty: 50,
-    avgPrice: 22450.0,
-    netOrgAvgPrice: 22450.0,
-    realizedPnl: 0.0,
-    realizedOrgPnl: 0.0,
-    multiplier: 1.0,
-    priceFactor: 1.0,
-    productType: 'intraday',
-    symbol: symbolInfoObj,
-  },
-]
-
-const ocoOrders: Record<string, unknown>[] = [
-  {
-    groupId: 'OCO001',
-    symID: 'NIFTY',
-    name: 'NIFTY 50',
-    exchange: 'NSE',
-    side: 'sell',
-    productType: 'intraday',
-    stopLoss: { type: 'stopLoss', side: 'sell', triggerPrice: 22300, qty: 50, price: 22290, fillQty: 0 },
-    target: { type: 'limit', side: 'sell', triggerPrice: 22700, qty: 50, price: 22700, fillQty: 0 },
-  },
-]
-
+let orders: Record<string, unknown>[] = []
+let positions: Record<string, unknown>[] = []
+let ocoOrders: Record<string, unknown>[] = []
 const alerts: Record<string, unknown>[] = []
 
-// 11 strikes centered on the ATM strike, per fetchOIAnalysis's documented
-// contract (the SDK expects the host to derive this window itself).
-const oiStrikes = strikes.filter((s) => Math.abs(s - atmStrike) <= 500)
-
-function makeOISide(): Record<string, { oi: number; oiChg: number; prevOi: number }> {
-  const side: Record<string, { oi: number; oiChg: number; prevOi: number }> = {}
-  for (const strike of oiStrikes) {
-    const oi = 50000 + Math.floor(Math.random() * 50000)
-    const oiChg = Math.floor((Math.random() - 0.5) * 10000)
-    side[String(strike)] = { oi, oiChg, prevOi: oi - oiChg }
-  }
-  return side
-}
-
-function makeBars(count: number, intervalMs: number, to: number): number[][] {
-  const bars: number[][] = []
-  let p = price
-  for (let i = count - 1; i >= 0; i--) {
-    const ts = to - i * intervalMs
-    const open = p
-    const change = (Math.random() - 0.48) * 50
-    const close = Math.max(18000, Math.min(28000, open + change))
-    const high = Math.max(open, close) + Math.random() * 20
-    const low = Math.min(open, close) - Math.random() * 20
-    const volume = 1000 + Math.floor(Math.random() * 5000)
-    bars.push([ts, open, high, low, close, volume])
-    p = close
-  }
-  price = p
-  return bars
-}
-
-function dispatch(name: string, detail: unknown): void {
-  window.dispatchEvent(new CustomEvent(name, { detail: JSON.stringify(detail) }))
-}
-
-/** Starts the demo's background tick/seed-data timers. Call once. */
-export function startMockFeeds(): void {
-  // Live tick, once a second — only once something has actually subscribed,
-  // matching subscribeMarketData/unsubscribeMarketData below.
-  setInterval(() => {
-    if (!subscribedSymbols.has('NIFTY')) return
-    price += (Math.random() - 0.48) * 10
-    price = Math.max(18000, Math.min(28000, price))
-    const ltp = Math.round(price * 100) / 100
-    dispatch('nxtchart:marketData', [
-      {
-        symbolId: 'NIFTY',
-        ltp,
-        ltq: 10 + Math.floor(Math.random() * 50),
-        chng: Math.round((ltp - 22500) * 100) / 100,
-        chngPer: Math.round(((ltp - 22500) / 22500) * 10000) / 100,
-        ltt: Date.now(),
-      },
-    ])
-  }, 1000)
-
-  // Orders/positions/OCO streams only reach a listener once the Flutter
-  // side has actually subscribed (broadcast streams don't replay past
-  // events). Re-dispatching every couple seconds means whichever bloc
-  // subscribes late still gets seeded data on the next tick, instead of
-  // depending on a one-shot dispatch racing app startup.
-  setInterval(() => {
-    dispatch('nxtchart:orders', orders)
-    dispatch('nxtchart:positions', positions)
-    dispatch('nxtchart:ocoOrders', ocoOrders)
-  }, 2000)
-}
-
 export const nxtChartHost: NxtChartHost = {
-  get symbolInfo() { return symbolInfoJson },
-  get underlyingSymbolInfo() { return '' }, // empty for this equity
-  get optionSymbols() { return optionSymbolsJson },
-  get futureSymbols() { return '[]' },
-  get indexSymbols() { return '[]' },
-  get marketTiming() { return marketTimingJson },
+  get symbolInfo() { return symbolInfoJson() },
+  get underlyingSymbolInfo() { return '' },
+  get optionSymbols() { return optionSymbolsJson() },
+  get futureSymbols() { return futureSymbolsJson() },
+  get indexSymbols() { return indexSymbolsJson() },
+  get marketTiming() { return marketTimingJson() },
   get hasOCO() { return true },
   get isMarketOrderSupported() { return true },
   get storageKey() { return 'js-host-demo' },
-  // Optional host branding — any real host can set its own colors here.
   get primaryColor() { return '#2EA7E0' },
   get onPrimaryColor() { return '#FFFFFF' },
-  // The demo toolbar's theme button writes this to localStorage and
-  // reloads; a real host just returns its own current theme.
   get forcedBrightness() {
     return localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null
   },
 
-  loadData(_symbolId, _from, to, intervalSeconds, requiredBars) {
-    return Promise.resolve(JSON.stringify(makeBars(requiredBars, intervalSeconds * 1000, to)))
+  loadData(symbolId, _from, to, intervalSeconds, requiredBars) {
+    return Promise.resolve(JSON.stringify(makeBars(requiredBars, intervalSeconds * 1000, to, symbolId)))
   },
-  fetchOptionDetails() {
-    return Promise.resolve(fetchOptionDetailsFor())
-  },
-  chartTopOptions() {
-    return Promise.resolve(topOptionsJson)
-  },
-  atmSymbols() {
-    return Promise.resolve(atmSymbolsJson)
-  },
-  searchSymbols(query) {
-    const keyword = query.trim().toLowerCase()
-    const matches = keyword
-      ? optionChain.filter(
-          (s) => s.name.toLowerCase().includes(keyword) || s.id.toLowerCase().includes(keyword),
-        )
-      : []
-    return Promise.resolve(JSON.stringify(matches))
-  },
-  fetchOIAnalysis() {
-    return Promise.resolve(JSON.stringify({ calls: makeOISide(), puts: makeOISide() }))
-  },
-  fetchOIChange() {
-    const toChangeOnly = (side: Record<string, { oiChg: number }>) =>
-      Object.fromEntries(Object.entries(side).map(([strike, v]) => [strike, v.oiChg]))
-    return Promise.resolve(
-      JSON.stringify({ calls: toChangeOnly(makeOISide()), puts: toChangeOnly(makeOISide()) }),
-    )
-  },
-  fetchOI() {
-    const toOiOnly = (side: Record<string, { oi: number }>) =>
-      Object.fromEntries(Object.entries(side).map(([strike, v]) => [strike, v.oi]))
-    return Promise.resolve(
-      JSON.stringify({ calls: toOiOnly(makeOISide()), puts: toOiOnly(makeOISide()) }),
-    )
-  },
-  fetchPcrIntraday() { return Promise.resolve('[]') },
-  fetchAtmStraddleIntraday() { return Promise.resolve('{}') },
-  fetchAtmIvIntraday() { return Promise.resolve('[]') },
-  fundsData() {
-    return Promise.resolve(JSON.stringify({ availableMargin: 347500.0, usedMargin: 152500.0 }))
-  },
+  fetchOptionDetails() { return Promise.resolve(fetchOptionDetailsJson()) },
+  chartTopOptions() { return Promise.resolve(chartTopOptionsJson()) },
+  atmSymbols() { return Promise.resolve(atmSymbolsJson()) },
+  searchSymbols(query) { return Promise.resolve(searchSymbols(query)) },
+  fetchOIAnalysis() { return Promise.resolve(fetchOIAnalysisJson()) },
+  fetchOIChange() { return Promise.resolve(fetchOIChangeJson()) },
+  fetchOI() { return Promise.resolve(fetchOIJson()) },
+  fetchPcrIntraday() { return Promise.resolve(fetchPcrIntradayJson()) },
+  fetchAtmStraddleIntraday() { return Promise.resolve(fetchAtmStraddleIntradayJson()) },
+  fetchAtmIvIntraday() { return Promise.resolve(fetchAtmIvIntradayJson()) },
+  fundsData() { return Promise.resolve(JSON.stringify({ availableMargin: 347500.0, usedMargin: 152500.0 })) },
 
   placeOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     orderCounter++
-    const order = {
+    orders.push({
       orderID: `ORD${String(orderCounter).padStart(3, '0')}`,
-      type: p.orderType,
-      orderAction: p.orderAction,
-      productType: p.productType,
-      avgPrice: p.price,
-      netQty: p.qty,
+      symbolID: p.symID,
+      avgPrice: p.price ?? 0,
+      type: p.orderType ?? 'limit',
+      netQty: p.qty ?? 0,
       fillQty: 0,
-      ordTime: formatOrdTime(new Date()),
-      orderStatus: 'open',
-      triggerPrice: p.triggerPrice ?? 0,
-      symbol: { id: p.symID, name: p.symID, lotSize: LOT_SIZE, precision: PRECISION, tickSize: TICK_SIZE },
-    }
-    orders.push(order)
+      orderAction: p.orderAction ?? 'buy',
+    })
     dispatch('nxtchart:orders', orders)
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Order placed' })
   },
   modifyOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     const idx = orders.findIndex((o) => o.orderID === p.orderID)
-    if (idx !== -1) {
-      orders[idx] = {
-        ...orders[idx],
-        avgPrice: p.price,
-        netQty: p.qty,
-        type: p.orderType,
-        orderAction: p.orderAction,
-      }
+    if (idx >= 0) {
+      orders[idx] = { ...orders[idx], avgPrice: p.price ?? 0, netQty: p.qty ?? 0, type: p.orderType ?? 'limit', orderAction: p.orderAction ?? 'buy' }
       dispatch('nxtchart:orders', orders)
     }
   },
   cancelOrder(orderID) {
-    const idx = orders.findIndex((o) => o.orderID === orderID)
-    if (idx !== -1) orders.splice(idx, 1)
+    orders = orders.filter((o) => o.orderID !== orderID)
     dispatch('nxtchart:orders', orders)
-    dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'Order cancelled' })
+    dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Order cancelled' })
   },
   placeOCOOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     ocoGroupCounter++
-    const groupId = (p.groupId as string) ?? `OCO${String(ocoGroupCounter).padStart(3, '0')}`
-    ocoOrders.push({
-      groupId,
-      symID: p.symID,
-      name: p.symID,
-      exchange: 'NSE',
-      side: p.side,
-      productType: p.productType,
-      stopLoss: { type: 'stopLoss', side: p.side, triggerPrice: p.stopPrice, qty: p.stopQty, price: p.stopPrice, fillQty: 0 },
-      target: { type: 'limit', side: p.side, triggerPrice: p.targetTriggerPrice, qty: p.targetQty, price: p.targetPrice, fillQty: 0 },
-    })
+    ocoOrders.push({ ...p, groupId: `OCO${String(ocoGroupCounter).padStart(3, '0')}` })
     dispatch('nxtchart:ocoOrders', ocoOrders)
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'OCO order placed' })
   },
   modifyOCOOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     const idx = ocoOrders.findIndex((o) => o.groupId === p.groupId)
-    if (idx !== -1) {
-      ocoOrders[idx] = {
-        ...ocoOrders[idx],
-        side: p.side,
-        productType: p.productType,
-        stopLoss: { type: 'stopLoss', side: p.side, triggerPrice: p.stopPrice, qty: p.stopQty, price: p.stopPrice, fillQty: 0 },
-        target: { type: 'limit', side: p.side, triggerPrice: p.targetTriggerPrice, qty: p.targetQty, price: p.targetPrice, fillQty: 0 },
-      }
+    if (idx >= 0) {
+      ocoOrders[idx] = { ...ocoOrders[idx], ...p }
       dispatch('nxtchart:ocoOrders', ocoOrders)
     }
   },
   cancelOCOOrder(groupId) {
-    const idx = ocoOrders.findIndex((o) => o.groupId === groupId)
-    if (idx !== -1) ocoOrders.splice(idx, 1)
+    ocoOrders = ocoOrders.filter((o) => o.groupId !== groupId)
     dispatch('nxtchart:ocoOrders', ocoOrders)
-    dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'OCO order cancelled' })
+    dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'OCO order cancelled' })
   },
   groupAdjustOrders() {
-    // Exiting held legs and adding new ones from the option chain touches
-    // positions, orders, and OCO groups together -- out of scope for this
-    // demo's mock state. Acknowledge the action so the UI doesn't hang.
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Adjustment submitted' })
   },
   closeRequested() {
-    location.hash = ''
-    location.reload()
+    location.href = location.pathname
   },
   createAlert(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     alertCounter++
-    alerts.push({
-      alertId: `ALERT${String(alertCounter).padStart(3, '0')}`,
-      symbolInfo: { id: p.symbolId, name: p.symbolId },
-      triggerPrice: p.triggerPrice,
-      enabled: true,
-      triggered: false,
-      createdAt: Date.now(),
-    })
+    alerts.push({ ...p, alertId: `ALT${String(alertCounter).padStart(3, '0')}` })
     dispatch('nxtchart:alerts', alerts)
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Alert created' })
   },
   modifyAlert(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     const idx = alerts.findIndex((a) => a.alertId === p.alertId)
-    if (idx !== -1) {
-      alerts[idx] = { ...alerts[idx], triggerPrice: p.triggerPrice }
+    if (idx >= 0) {
+      alerts[idx] = { ...alerts[idx], ...p }
       dispatch('nxtchart:alerts', alerts)
     }
   },
   deleteAlert(alertId) {
     const idx = alerts.findIndex((a) => a.alertId === alertId)
-    if (idx !== -1) alerts.splice(idx, 1)
-    dispatch('nxtchart:alerts', alerts)
-    dispatch('nxtchart:actionFeedback', { type: 'negative', message: 'Alert deleted' })
+    if (idx >= 0) {
+      alerts.splice(idx, 1)
+      dispatch('nxtchart:alerts', alerts)
+      dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Alert deleted' })
+    }
   },
 
   subscribeMarketData(symbols) {
@@ -501,4 +222,29 @@ export const nxtChartHost: NxtChartHost = {
   unsubscribeMarketData() {
     subscribedSymbols.clear()
   },
+}
+
+export async function startMockFeeds(): Promise<void> {
+  await loadMockData()
+  orders = seedOrders()
+  positions = seedPositions()
+  ocoOrders = seedOcoOrders()
+  // Seeded ids ("ORD001", "OCO001") live in the same numbering space as
+  // generated ones -- start past them so the next placeOrder()/
+  // placeOCOOrder() call can't mint a duplicate id (bug found while
+  // transcribing this brief; same class of defect the Android/iOS sibling
+  // tasks hit independently and fixed the same way).
+  orderCounter = orders.length
+  ocoGroupCounter = ocoOrders.length
+
+  setInterval(() => {
+    const ticks = nextTicks().filter((t) => subscribedSymbols.has(t.symbolId as string))
+    if (ticks.length > 0) dispatch('nxtchart:marketData', ticks)
+  }, 1000)
+
+  setInterval(() => {
+    dispatch('nxtchart:orders', orders)
+    dispatch('nxtchart:positions', positions)
+    dispatch('nxtchart:ocoOrders', ocoOrders)
+  }, 2000)
 }

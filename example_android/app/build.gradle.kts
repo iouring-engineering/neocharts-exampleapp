@@ -36,7 +36,6 @@ android {
 
     buildFeatures {
         compose = true
-        viewBinding = true
     }
 
 }
@@ -57,7 +56,6 @@ dependencies {
     implementation(libs.androidx.core.ktx.v1131)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
 
     // Testing
     testImplementation(libs.junit)
@@ -65,6 +63,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core.v351)
 
     // Jetpack Compose
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)

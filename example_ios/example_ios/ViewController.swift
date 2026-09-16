@@ -1,13 +1,22 @@
 import Flutter
+import SwiftUI
 import UIKit
 
 class ViewController: UIViewController {
-    @IBAction func openChart(_ sender: Any) {
-        present(makeFlutterVC(engine: appDelegate.chartEngine), animated: true)
-    }
+    override func viewDidLoad() {
+        super.viewDidLoad()
 
-    @IBAction func openScalper(_ sender: Any) {
-        present(makeFlutterVC(engine: appDelegate.chartEngine), animated: true)
+        let landing = LandingView(onOpenChart: { [weak self] in
+            guard let self else { return }
+            self.present(self.makeFlutterVC(engine: self.appDelegate.chartEngine), animated: true)
+        })
+        let hosting = UIHostingController(rootView: landing)
+
+        addChild(hosting)
+        hosting.view.frame = view.bounds
+        hosting.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(hosting.view)
+        hosting.didMove(toParent: self)
     }
 
     private var appDelegate: AppDelegate {

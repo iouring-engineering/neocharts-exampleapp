@@ -5,8 +5,10 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.example.example_android.databinding.ActivityMainBinding
+import com.example.example_android.ui.theme.Example_androidTheme
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
@@ -16,13 +18,10 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var mockData: MockDataSource
 
     // Tracks whichever FlutterActivity (chart or scalper) is currently on
     // screen, so the "closeRequested" channel call -- which arrives on the
@@ -31,9 +30,9 @@ class MainActivity : AppCompatActivity() {
     private var activeChartActivity: Activity? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        mockData = MockDataSource(applicationContext)
 
         application.registerActivityLifecycleCallbacks(
             object : Application.ActivityLifecycleCallbacks {
@@ -53,17 +52,16 @@ class MainActivity : AppCompatActivity() {
 
         warmUpEngines()
 
-        binding.openFlutterButton.setOnClickListener {
-            startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
-        }
-        binding.openScalperButton.setOnClickListener {
-            startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
+        setContent {
+            Example_androidTheme(dynamicColor = false) {
+                LandingScreen(
+                    onOpenChart = {
+                        startActivity(FlutterActivity.withCachedEngine("chart_engine").build(this))
+                    }
+                )
+            }
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Engine warm-up
-    // -------------------------------------------------------------------------
 
     private fun warmUpEngines() {
         val group = FlutterEngineGroup(this)
@@ -74,10 +72,6 @@ class MainActivity : AppCompatActivity() {
         FlutterEngineCache.getInstance().put("chart_engine", chartEngine)
     }
 
-    // -------------------------------------------------------------------------
-    // Channel registration
-    // -------------------------------------------------------------------------
-
     private val orders = mutableListOf<MutableMap<String, Any>>()
     private var orderSink: EventChannel.EventSink? = null
     private var orderCounter = 0
@@ -85,25 +79,31 @@ class MainActivity : AppCompatActivity() {
     private fun registerChannels(engine: FlutterEngine) {
         val messenger = engine.dartExecutor.binaryMessenger
 
-        // --- MethodChannel: nxtchart/data ---
         MethodChannel(messenger, "nxtchart/data").setMethodCallHandler { call, result ->
             when (call.method) {
-                "symbolInfo" -> result.success(symbolInfo())
-                "optionSymbols" -> result.success("[]")
-                "marketTiming" -> result.success(marketTiming())
+                "symbolInfo" -> result.success(mockData.symbolInfo())
+                "optionSymbols" -> result.success(mockData.optionSymbols())
+                "marketTiming" -> result.success(mockData.marketTiming())
                 "hasOCO" -> result.success(false)
                 "isMarketOrderSupported" -> result.success(true)
                 "storageKey" -> result.success("default")
-                "underlyingSymbolInfo" -> result.success(null)
-                "futureSymbols" -> result.success(null)
-                "indexSymbols" -> result.success(null)
+                "underlyingSymbolInfo" -> result.success(mockData.symbolInfo())
+                "futureSymbols" -> result.success(mockData.futureSymbols())
+                "indexSymbols" -> result.success(mockData.indexSymbols())
                 "atmSymbols" -> result.success(null)
-                "fetchOptionDetails" -> result.success("[]")
-                "chartTopOptions" -> result.success("[]")
+                "fetchOptionDetails" -> result.success(mockData.fetchOptionDetails())
+                "chartTopOptions" -> result.success(mockData.chartTopOptions())
+                "fetchOI" -> result.success(mockData.fetchOI())
+                "fetchOIChange" -> result.success(mockData.fetchOIChange())
+                "fetchOIAnalysis" -> result.success(mockData.fetchOIAnalysis())
+                "fetchPcrIntraday" -> result.success(mockData.fetchPcrIntraday())
+                "fetchAtmStraddleIntraday" -> result.success(mockData.fetchAtmStraddleIntraday())
+                "fetchAtmIvIntraday" -> result.success(mockData.fetchAtmIvIntraday())
                 "loadData" -> {
+                    val symbolId = call.argument<String>("symbolId") ?: "NIFTY"
                     val intervalSeconds = call.argument<Int>("intervalSeconds") ?: 60
                     val requiredBars = call.argument<Int>("requiredBars") ?: 200
-                    result.success(generateOhlcv(intervalSeconds, requiredBars))
+                    result.success(mockData.generateOhlcv(symbolId, intervalSeconds, requiredBars))
                 }
                 "placeOrder" -> {
                     val p = JSONObject(call.arguments as? String ?: "{}")
@@ -148,9 +148,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // --- EventChannel: nxtchart/marketData ---
         val tickHandler = Handler(Looper.getMainLooper())
-        var lastPrice = 22500.0
         EventChannel(messenger, "nxtchart/marketData")
             .setStreamHandler(object : EventChannel.StreamHandler {
                 private var tickRunnable: Runnable? = null
@@ -158,19 +156,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                     tickRunnable = object : Runnable {
                         override fun run() {
-                            lastPrice += (Random.nextDouble() - 0.48) * 10
-                            lastPrice = lastPrice.coerceIn(18000.0, 28000.0)
-                            val ltp = "%.2f".format(lastPrice).toDouble()
-                            val tick = JSONObject().apply {
-                                put("symbolId", "NIFTY")
-                                put("ltp", ltp)
-                                put("ltq", 10 + Random.nextInt(50))
-                                put("chng", "%.2f".format(ltp - 22500).toDouble())
-                                put("chngPer",
-                                    "%.2f".format((ltp - 22500) / 22500 * 100).toDouble())
-                                put("ltt", System.currentTimeMillis())
-                            }
-                            sink.success(JSONArray().put(tick).toString())
+                            sink.success(mockData.nextTicks())
                             tickHandler.postDelayed(this, 1000)
                         }
                     }
@@ -183,11 +169,25 @@ class MainActivity : AppCompatActivity() {
                 }
             })
 
-        // --- EventChannel: nxtchart/orders ---
         EventChannel(messenger, "nxtchart/orders")
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                     orderSink = sink
+                    if (orders.isEmpty()) {
+                        orders.addAll(
+                            JSONArray(mockData.seedOrders()).let { arr ->
+                                (0 until arr.length()).map { i ->
+                                    val obj = arr.getJSONObject(i)
+                                    obj.keys().asSequence().associateWith { k -> obj.get(k) }
+                                        .toMutableMap()
+                                }
+                            }
+                        )
+                        // Seeded ids ("ORD001", ...) live in the same numbering
+                        // space as generated ones -- start past them so the next
+                        // placeOrder() call can't mint a duplicate id.
+                        orderCounter = orders.size
+                    }
                     emitOrders()
                 }
 
@@ -196,13 +196,25 @@ class MainActivity : AppCompatActivity() {
                 }
             })
 
-        // --- Stub EventChannels (no events emitted) ---
+        var positionsSink: EventChannel.EventSink? = null
+        EventChannel(messenger, "nxtchart/positions")
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    positionsSink = sink
+                    sink.success(mockData.seedPositions())
+                }
+                override fun onCancel(arguments: Any?) { positionsSink = null }
+            })
+
         val stub = object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {}
             override fun onCancel(arguments: Any?) {}
         }
-        EventChannel(messenger, "nxtchart/positions").setStreamHandler(stub)
         EventChannel(messenger, "nxtchart/tradeEvents").setStreamHandler(stub)
+        // Silent stub, not a seed: this host has no OCO write path (hasOCO is
+        // false above and place/modify/cancelOCOOrder fall through to
+        // notImplemented), so an emitted OCO order would render a draggable
+        // marker whose every interaction fails.
         EventChannel(messenger, "nxtchart/ocoOrders").setStreamHandler(stub)
     }
 
@@ -212,56 +224,5 @@ class MainActivity : AppCompatActivity() {
             arr.put(JSONObject(order as Map<*, *>))
         }
         orderSink?.success(arr.toString())
-    }
-
-    // -------------------------------------------------------------------------
-    // Mock data helpers
-    // -------------------------------------------------------------------------
-
-    private fun symbolInfo(): String = JSONObject().apply {
-        put("id", "NIFTY")
-        put("name", "NIFTY 50")
-        put("lotSize", 50)
-        put("precision", 2)
-        put("tickSize", 0.05)
-    }.toString()
-
-    private fun marketTiming(): String {
-        val sessions = JSONObject().apply {
-            for (day in listOf("Mon", "Tue", "Wed", "Thu", "Fri")) {
-                put(day, JSONObject().apply {
-                    put("open", "09:15")
-                    put("close", "15:30")
-                })
-            }
-        }
-        return JSONObject().apply {
-            put("timezone", "Asia/Kolkata")
-            put("sessions", sessions)
-            put("holidays", JSONArray())
-            put("special", JSONObject())
-        }.toString()
-    }
-
-    private fun generateOhlcv(intervalSeconds: Int, barCount: Int): String {
-        val interval = intervalSeconds * 1000L
-        val endTime = System.currentTimeMillis()
-        val bars = JSONArray()
-        var price = 22500.0
-
-        for (i in barCount - 1 downTo 0) {
-            val ts = endTime - i * interval
-            val open = price
-            val change = (Random.nextDouble() - 0.48) * 50
-            val close = (open + change).coerceIn(18000.0, 28000.0)
-            val high = max(open, close) + Random.nextDouble() * 20
-            val low = min(open, close) - Random.nextDouble() * 20
-            val volume = (1000 + Random.nextInt(5000)).toDouble()
-            bars.put(JSONArray().apply {
-                put(ts); put(open); put(high); put(low); put(close); put(volume)
-            })
-            price = close
-        }
-        return bars.toString()
     }
 }
