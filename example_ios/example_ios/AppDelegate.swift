@@ -8,6 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     let engineGroup = FlutterEngineGroup(name: "nxt_chart", project: nil)
     lazy var chartEngine: FlutterEngine = engineGroup.makeEngine(withEntrypoint: nil, libraryURI: nil)
+    let mockData = MockDataSource()
 
     func application(
         _ application: UIApplication,
@@ -21,50 +22,61 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    // -------------------------------------------------------------------------
-    // Channel registration
-    // -------------------------------------------------------------------------
-
     private var orders: [[String: Any]] = []
     fileprivate var orderSink: FlutterEventSink?
     private var orderCounter = 0
-    private var tickTimer: Timer?
-    private var lastPrice: Double = 22500.0
 
-    // Tracks whichever FlutterViewController (chart or scalper) is currently
-    // presented, so "closeRequested" -- which arrives on the engine's
-    // messenger, not tied to a specific view controller -- knows which one
-    // to dismiss. Set by `ViewController.makeFlutterVC`.
     weak var activeChartVC: FlutterViewController?
 
     private func registerChannels(messenger: FlutterBinaryMessenger) {
 
-        // --- MethodChannel: nxtchart/data ---
         FlutterMethodChannel(name: "nxtchart/data", binaryMessenger: messenger)
             .setMethodCallHandler { [weak self] call, result in
                 guard let self else { return }
                 switch call.method {
                 case "symbolInfo":
-                    result(self.symbolInfo())
+                    result(self.mockData.symbolInfo())
                 case "optionSymbols":
-                    result("[]")
+                    result(self.mockData.optionSymbols())
+                case "fetchOptionDetails":
+                    result(self.mockData.fetchOptionDetails())
                 case "marketTiming":
-                    result(self.marketTiming())
+                    result(self.mockData.marketTiming())
                 case "hasOCO":
                     result(false)
                 case "isMarketOrderSupported":
                     result(true)
                 case "storageKey":
                     result("default")
-                case "underlyingSymbolInfo", "futureSymbols", "indexSymbols", "atmSymbols":
+                case "underlyingSymbolInfo":
+                    result(self.mockData.symbolInfo())
+                case "futureSymbols":
+                    result(self.mockData.futureSymbols())
+                case "indexSymbols":
+                    result(self.mockData.indexSymbols())
+                case "atmSymbols":
                     result(nil)
-                case "fetchOptionDetails", "chartTopOptions":
-                    result("[]")
+                case "chartTopOptions":
+                    result(self.mockData.chartTopOptions())
+                case "fetchOI":
+                    result(self.mockData.fetchOI())
+                case "fetchOIChange":
+                    result(self.mockData.fetchOIChange())
+                case "fetchOIAnalysis":
+                    result(self.mockData.fetchOIAnalysis())
+                case "fetchPcrIntraday":
+                    result(self.mockData.fetchPcrIntraday())
+                case "fetchAtmStraddleIntraday":
+                    result(self.mockData.fetchAtmStraddleIntraday())
+                case "fetchAtmIvIntraday":
+                    result(self.mockData.fetchAtmIvIntraday())
                 case "loadData":
                     let args = call.arguments as? [String: Any]
+                    let symbolId = args?["symbolId"] as? String ?? "NIFTY"
                     let intervalSeconds = args?["intervalSeconds"] as? Int ?? 60
                     let requiredBars = args?["requiredBars"] as? Int ?? 200
-                    result(self.generateOhlcv(
+                    result(self.mockData.generateOhlcv(
+                        symbolId: symbolId,
                         intervalSeconds: intervalSeconds,
                         barCount: requiredBars
                     ))
@@ -117,22 +129,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 }
             }
 
-        // --- EventChannel: nxtchart/marketData ---
         FlutterEventChannel(name: "nxtchart/marketData", binaryMessenger: messenger)
             .setStreamHandler(MarketDataStreamHandler(appDelegate: self))
 
-        // --- EventChannel: nxtchart/orders ---
         FlutterEventChannel(name: "nxtchart/orders", binaryMessenger: messenger)
             .setStreamHandler(OrdersStreamHandler(appDelegate: self))
 
-        // --- Stub EventChannels (no events emitted) ---
-        let stub = StubStreamHandler()
         FlutterEventChannel(name: "nxtchart/positions", binaryMessenger: messenger)
-            .setStreamHandler(stub)
-        FlutterEventChannel(name: "nxtchart/tradeEvents", binaryMessenger: messenger)
-            .setStreamHandler(stub)
+            .setStreamHandler(SeedOnceStreamHandler { [weak self] in self?.mockData.seedPositions() ?? "[]" })
+        // Silent stub, not a seed: this host has no OCO write path (hasOCO is
+        // false above and place/modify/cancelOCOOrder fall through to
+        // FlutterMethodNotImplemented), so an emitted OCO order would render a
+        // draggable marker whose every interaction fails.
         FlutterEventChannel(name: "nxtchart/ocoOrders", binaryMessenger: messenger)
-            .setStreamHandler(stub)
+            .setStreamHandler(StubStreamHandler())
+
+        FlutterEventChannel(name: "nxtchart/tradeEvents", binaryMessenger: messenger)
+            .setStreamHandler(StubStreamHandler())
     }
 
     func emitOrders() {
@@ -143,73 +156,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         sink(json)
     }
 
-    // -------------------------------------------------------------------------
-    // Mock data helpers
-    // -------------------------------------------------------------------------
+    func nextTick() -> String { mockData.nextTicks() }
 
-    private func symbolInfo() -> String {
-        let obj: [String: Any] = [
-            "id": "NIFTY",
-            "name": "NIFTY 50",
-            "lotSize": 50,
-            "precision": 2,
-            "tickSize": 0.05,
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: obj)
-        return String(data: data, encoding: .utf8)!
-    }
-
-    private func marketTiming() -> String {
-        var sessions: [String: Any] = [:]
-        for day in ["Mon", "Tue", "Wed", "Thu", "Fri"] {
-            sessions[day] = ["open": "09:15", "close": "15:30"]
-        }
-        let obj: [String: Any] = [
-            "timezone": "Asia/Kolkata",
-            "sessions": sessions,
-            "holidays": [],
-            "special": [:],
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: obj)
-        return String(data: data, encoding: .utf8)!
-    }
-
-    func generateOhlcv(intervalSeconds: Int, barCount: Int) -> String {
-        let interval = TimeInterval(intervalSeconds)
-        let endTime = Date().timeIntervalSince1970
-        var bars: [[Any]] = []
-        var price = 22500.0
-
-        for i in stride(from: barCount - 1, through: 0, by: -1) {
-            let ts = Int64((endTime - Double(i) * interval) * 1000)
-            let open = price
-            let change = (Double.random(in: 0 ..< 1) - 0.48) * 50
-            let close = min(max(open + change, 18000.0), 28000.0)
-            let high = max(open, close) + Double.random(in: 0 ..< 20)
-            let low = min(open, close) - Double.random(in: 0 ..< 20)
-            let volume = Double(Int.random(in: 1000 ..< 6000))
-            bars.append([ts, open, high, low, close, volume])
-            price = close
-        }
-
-        let data = try! JSONSerialization.data(withJSONObject: bars)
-        return String(data: data, encoding: .utf8)!
-    }
-
-    func nextTick() -> String {
-        lastPrice += (Double.random(in: 0 ..< 1) - 0.48) * 10
-        lastPrice = min(max(lastPrice, 18000.0), 28000.0)
-        let ltp = (lastPrice * 100).rounded() / 100
-        let obj: [String: Any] = [
-            "symbolId": "NIFTY",
-            "ltp": ltp,
-            "ltq": Int.random(in: 10 ..< 60),
-            "chng": (ltp - 22500 * 100).rounded() / 100,
-            "chngPer": ((ltp - 22500) / 22500 * 10000).rounded() / 100,
-            "ltt": Int64(Date().timeIntervalSince1970 * 1000),
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: [obj])
-        return String(data: data, encoding: .utf8)!
+    func seedOrdersIfEmpty() {
+        guard orders.isEmpty,
+              let data = mockData.seedOrders().data(using: .utf8),
+              let seeded = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+        else { return }
+        orders = seeded
+        // Seeded ids ("ORD001", ...) live in the same numbering space as
+        // generated ones -- start past them so the next placeOrder() call
+        // can't mint a duplicate id.
+        orderCounter = orders.count
     }
 }
 
@@ -218,11 +176,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 // -------------------------------------------------------------------------
 
 class StubStreamHandler: NSObject, FlutterStreamHandler {
-    func onListen(
-        withArguments arguments: Any?,
-        eventSink: @escaping FlutterEventSink
-    ) -> FlutterError? { nil }
+    func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? { nil }
+    func onCancel(withArguments arguments: Any?) -> FlutterError? { nil }
+}
 
+/// Emits one fixed JSON payload (from `load()`) once per listener attach, then goes silent -- used for the positions seed stream, which starts with fixture data but doesn't update over time (out of scope, see spec).
+class SeedOnceStreamHandler: NSObject, FlutterStreamHandler {
+    private let load: () -> String
+    init(load: @escaping () -> String) { self.load = load }
+
+    func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? {
+        eventSink(load())
+        return nil
+    }
     func onCancel(withArguments arguments: Any?) -> FlutterError? { nil }
 }
 
@@ -230,16 +196,10 @@ class MarketDataStreamHandler: NSObject, FlutterStreamHandler {
     private weak var appDelegate: AppDelegate?
     private var timer: Timer?
 
-    init(appDelegate: AppDelegate) {
-        self.appDelegate = appDelegate
-    }
+    init(appDelegate: AppDelegate) { self.appDelegate = appDelegate }
 
-    func onListen(
-        withArguments arguments: Any?,
-        eventSink: @escaping FlutterEventSink
-    ) -> FlutterError? {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
-            [weak self] _ in
+    func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self, let ad = self.appDelegate else { return }
             eventSink(ad.nextTick())
         }
@@ -255,16 +215,11 @@ class MarketDataStreamHandler: NSObject, FlutterStreamHandler {
 
 class OrdersStreamHandler: NSObject, FlutterStreamHandler {
     private weak var appDelegate: AppDelegate?
+    init(appDelegate: AppDelegate) { self.appDelegate = appDelegate }
 
-    init(appDelegate: AppDelegate) {
-        self.appDelegate = appDelegate
-    }
-
-    func onListen(
-        withArguments arguments: Any?,
-        eventSink: @escaping FlutterEventSink
-    ) -> FlutterError? {
+    func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? {
         appDelegate?.orderSink = eventSink
+        appDelegate?.seedOrdersIfEmpty()
         appDelegate?.emitOrders()
         return nil
     }
