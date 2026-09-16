@@ -1,0 +1,16 @@
+{
+  "seedOrders": [
+    {
+      "orderID": "ORD001",
+      "type": "limit",
+      "orderAction": "buy",
+      "productType": "intraday",
+      "avgPrice": 22400.0,
+      "netQty": 50,
+      "fillQty": 0,
+      "orderStatus": "open",
+      "triggerPrice": 0,
+      "ordTimeOffsetMinutes": 15
+    }
+  ]
+}

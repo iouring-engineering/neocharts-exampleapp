@@ -1,0 +1,16 @@
+{
+  "seedPositions": [
+    {
+      "symID": "NIFTY",
+      "displayName": "NIFTY 50",
+      "netQty": 50,
+      "avgPrice": 22450.0,
+      "netOrgAvgPrice": 22450.0,
+      "realizedPnl": 0.0,
+      "realizedOrgPnl": 0.0,
+      "multiplier": 1.0,
+      "priceFactor": 1.0,
+      "productType": "intraday"
+    }
+  ]
+}
