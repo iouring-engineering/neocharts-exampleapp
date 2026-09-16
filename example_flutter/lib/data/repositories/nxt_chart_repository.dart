@@ -1094,12 +1094,14 @@ class NxtChartRepository implements ChartInterface {
 
   @override
   Map<Segment, List<String>> get productTypesBySegment => {
+    Segment.equity: ['normal'],
     Segment.future: ['normal', 'intraday'],
     Segment.option: ['normal', 'intraday'],
   };
 
   @override
   Map<Segment, String> get defaultProductTypeBySegment => {
+    Segment.equity: 'normal',
     Segment.future: 'normal',
     Segment.option: 'normal',
   };
