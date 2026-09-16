@@ -28,15 +28,15 @@ export function ChartMount() {
     if (loaded.current || !hostRef.current) return
     loaded.current = true
 
-    // Served from public/build_web, a symlink to ../../../build/web -- see
-    // index.html's flutter.js script tag for why this can't be a plain
-    // "../../build/web" relative path under Vite's dev server.
+    // Base URL is VITE_SDK_ASSET_BASE (see .env / index.html's flutter.js
+    // script tag) -- defaults to /build_web/, a symlink to
+    // ../../../build/web for local/CI builds.
     window._flutter.loader.loadEntrypoint({
-      entrypointUrl: '/build_web/main.dart.js',
+      entrypointUrl: `${import.meta.env.VITE_SDK_ASSET_BASE}main.dart.js`,
       onEntrypointLoaded: async (engineInitializer) => {
         const appRunner = await engineInitializer.initializeEngine({
           hostElement: hostRef.current!,
-          assetBase: '/build_web/',
+          assetBase: import.meta.env.VITE_SDK_ASSET_BASE,
         })
         await appRunner.runApp()
       },

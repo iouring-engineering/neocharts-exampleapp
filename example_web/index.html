@@ -10,12 +10,13 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- Exposes the `_flutter.loader` global that ChartMount uses to boot
-         the SDK's compiled web bundle. Built by `fvm flutter build web` --
-         see the repo README for the build command. Served from
-         public/build_web, a symlink to ../../../build/web -- a plain
+         the SDK's compiled web bundle. Base URL is VITE_SDK_ASSET_BASE (see
+         .env) -- defaults to /build_web/, a symlink to ../../../build/web
+         populated by `fvm flutter build web` for local/CI builds (a plain
          "../../build/web" relative path breaks under Vite's dev server,
          which serves this app's own directory as its root, not the repo
-         root. -->
-    <script src="/build_web/flutter.js" defer></script>
+         root). Override VITE_SDK_ASSET_BASE at build time to load the
+         bundle from a CDN instead. -->
+    <script src="%VITE_SDK_ASSET_BASE%flutter.js" defer></script>
   </body>
 </html>
