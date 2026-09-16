@@ -5,8 +5,7 @@
     "lotSize": 65,
     "precision": 2,
     "tickSize": 0.05,
-    "exchange": "NSE",
-    "segment": "EQ"
+    "exchange": "NSE"
   },
   "optionChain": [
     {

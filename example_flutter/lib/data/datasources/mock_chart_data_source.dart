@@ -90,7 +90,6 @@ class MockChartDataSource {
       'precision': precision,
       'tickSize': tickSize,
       'exchange': 'NSE',
-      'segment': 'EQ',
     };
   }
 
