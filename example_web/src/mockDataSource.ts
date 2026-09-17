@@ -48,7 +48,6 @@ const REQUIRED_KEYS: (keyof Fixture)[] = [
 ]
 
 let fixture: Fixture | null = null
-const livePrices = new Map<string, number>()
 
 const FIXTURE_FILES = ['symbols', 'oi', 'orders', 'positions', 'oco_orders']
 
@@ -74,13 +73,61 @@ function data(): Fixture {
   return fixture
 }
 
-function priceFor(symbolId: string): number {
-  let price = livePrices.get(symbolId)
-  if (price === undefined) {
-    price = data().basePrices[symbolId] ?? 22600
-    livePrices.set(symbolId, price)
+// Looks up any tradable instrument (future or option) by id -- the index
+// itself is deliberately excluded, since it isn't tradable (see
+// seedOrders/seedPositions, which resolve each row's own symID through
+// this instead of a single hardcoded symbol).
+function symbolByID(symID: string): SymbolInfo {
+  const found = [...data().futureSymbols, ...data().optionChain].find(
+    (s) => s.id === symID,
+  )
+  if (!found) throw new Error(`mock fixture: unknown symID ${symID}`)
+  return found
+}
+
+// A fast, deterministic string hash mapped to [0, 1) -- gives each symbol
+// its own stable wave phase without needing a seeded PRNG library.
+function seededUnit(seed: string): number {
+  let h = 2166136261
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i)
+    h = Math.imul(h, 16777619)
   }
-  return price
+  return (h >>> 0) / 4294967296
+}
+
+// Smoothly interpolates between pseudo-random values at fixed-size time
+// "lattice" points (value noise) -- unlike a fixed-period sine wave, the
+// lattice values themselves are independent per symbol/spacing/index, so
+// the resulting path looks like irregular price action, never repeats,
+// and still only depends on (symbolId, ts).
+function latticeNoise(symbolId: string, ts: number, spacingMs: number): number {
+  const n = Math.floor(ts / spacingMs)
+  const frac = ts / spacingMs - n
+  const a = seededUnit(`${symbolId}:${spacingMs}:${n}`) * 2 - 1
+  const b = seededUnit(`${symbolId}:${spacingMs}:${n + 1}`) * 2 - 1
+  const smooth = frac * frac * (3 - 2 * frac) // smoothstep, avoids kinks at lattice points
+  return a + (b - a) * smooth
+}
+
+// Pure function of (symbolId, timestamp) -- deterministic and idempotent,
+// so any number of independent `loadData` calls (chart_bloc, analysis_bloc,
+// pan-back reloads all call it separately) return identical bars for the
+// same symbol/timestamps, and live ticks (which just evaluate this at
+// `Date.now()`) always continue exactly where the last historical bar left
+// off. The previous version cached a single mutable "current price" per
+// symbol and random-walked it forward on every call -- fine for one caller,
+// but two independent calls (or a reload) diverged onto different paths,
+// which showed up as one oversized candle where they met.
+// Three octaves of lattice noise (slow drift down to fast jitter), summed
+// -- looks like real price action rather than a clean periodic wave.
+function priceAt(symbolId: string, ts: number): number {
+  const base = data().basePrices[symbolId] ?? 22600
+  const wave =
+    latticeNoise(symbolId, ts, 20 * 60_000) * (base * 0.012) +
+    latticeNoise(symbolId, ts, 3 * 60_000) * (base * 0.005) +
+    latticeNoise(symbolId, ts, 20_000) * (base * 0.0015)
+  return Math.max(0.5, base + wave)
 }
 
 function pad2(n: number): string {
@@ -186,11 +233,11 @@ export function fetchAtmStraddleIntradayJson(): string {
 // into the "dd-MM-yyyy HH:mm:ss" string trade_interface.dart documents.
 export const seedOrders = () =>
   data().seedOrders.map((o) => {
-    const { ordTimeOffsetMinutes, ...rest } = o
-    // The index itself isn't tradable -- seed orders/positions/OCO orders
-    // all trade its front-month future instead (see also seedPositions and
-    // oco_orders.json's symID/name).
-    const resolved: Record<string, unknown> = { ...rest, symbol: data().futureSymbols[0] }
+    const { ordTimeOffsetMinutes, symID, ...rest } = o
+    const resolved: Record<string, unknown> = {
+      ...rest,
+      symbol: symbolByID(symID as string),
+    }
     if (typeof ordTimeOffsetMinutes === 'number') {
       resolved.ordTime = formatOrdTime(ordTimeOffsetMinutes)
     }
@@ -202,7 +249,7 @@ export const seedOrders = () =>
 export const seedPositions = () =>
   data().seedPositions.map((p) => ({
     ...p,
-    symbol: data().futureSymbols[0],
+    symbol: symbolByID(p.symID as string),
     pnl: 250.0,
     unrealizedPL: 250.0,
     mtm: 250.0,
@@ -217,19 +264,18 @@ export const seedOcoOrders = () => data().seedOcoOrders.map((o) => ({ ...o }))
 
 export function makeBars(count: number, intervalMs: number, to: number, symbolId: string): number[][] {
   const bars: number[][] = []
-  let p = priceFor(symbolId)
   for (let i = count - 1; i >= 0; i--) {
     const ts = to - i * intervalMs
-    const open = p
-    const change = (Math.random() - 0.48) * (open * 0.002)
-    const close = Math.max(1, open + change)
+    // Sampling the same continuous curve at each bar's start/end keeps
+    // consecutive bars connected (this bar's close === the next bar's
+    // open) without carrying mutable state across calls.
+    const open = priceAt(symbolId, ts)
+    const close = priceAt(symbolId, ts + intervalMs)
     const high = Math.max(open, close) + Math.random() * (open * 0.001)
     const low = Math.max(0.5, Math.min(open, close) - Math.random() * (open * 0.001))
     const volume = 1000 + Math.floor(Math.random() * 5000)
     bars.push([ts, open, high, low, close, volume])
-    p = close
   }
-  livePrices.set(symbolId, p)
   return bars
 }
 
@@ -244,10 +290,12 @@ export function nextTicks(): Record<string, unknown>[] {
 
 function tickFor(symbolId: string): Record<string, unknown> {
   const base = data().basePrices[symbolId] ?? 22600
-  let price = priceFor(symbolId)
-  price += (Math.random() - 0.48) * (base * 0.001)
-  price = Math.max(0.05, price)
-  livePrices.set(symbolId, price)
+  // Anchored to the same curve `makeBars` samples for history (so ticks
+  // never drift away from it), plus a small non-persisted jitter on top --
+  // the curve's finest octave only refreshes every 20s, which read as
+  // frozen from one 1s tick to the next.
+  const anchor = priceAt(symbolId, Date.now())
+  const price = Math.max(0.05, anchor + (Math.random() - 0.5) * (base * 0.0006))
   const ltp = Math.round(price * 100) / 100
   return {
     symbolId,
