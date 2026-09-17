@@ -109,7 +109,16 @@ const alerts: Record<string, unknown>[] = []
 
 export const nxtChartHost: NxtChartHost = {
   get symbolInfo() { return symbolInfoJson() },
-  get underlyingSymbolInfo() { return '' },
+  // JsChartInterface (lib/src/channel/js_chart_interface.dart) now derives
+  // the current underlying itself from `indexSymbols` + each symbol's own
+  // `undID` first -- correct across NIFTY/BANKNIFTY/SENSEX, unlike this
+  // getter alone (a plain host property, no way to know which underlying
+  // is current once there's more than one). This value only still matters
+  // as JsChartInterface's fallback for an underlying that ISN'T a known
+  // index (e.g. an equity option) -- not a case this mock's data has, so
+  // it's never actually read in practice here, but kept accurate rather
+  // than a placeholder since real hosts do rely on this getter directly.
+  get underlyingSymbolInfo() { return symbolInfoJson() },
   get optionSymbols() { return optionSymbolsJson() },
   get futureSymbols() { return futureSymbolsJson() },
   get indexSymbols() { return indexSymbolsJson() },
@@ -216,7 +225,14 @@ export const nxtChartHost: NxtChartHost = {
     }
   },
 
+  // The passed set is the complete desired subscription, not a delta to
+  // add onto -- replace, don't accumulate (see js_chart_interface.dart's
+  // marketDataStreamer/dispose for why an additive version broke: a
+  // transient onCancel/onListen pair around every symbol-set change would
+  // wipe out symbols this call had just added, since a bare `add` here
+  // relied on unsubscribeMarketData only ever running as final teardown).
   subscribeMarketData(symbols) {
+    subscribedSymbols.clear()
     for (const id of JSON.parse(symbols) as string[]) subscribedSymbols.add(id)
   },
   unsubscribeMarketData() {

@@ -2,6 +2,7 @@
   "seedOrders": [
     {
       "orderID": "ORD001",
+      "symID": "NIFTY17SEP26FUT",
       "type": "limit",
       "orderAction": "buy",
       "productType": "intraday",
@@ -11,6 +12,45 @@
       "orderStatus": "open",
       "triggerPrice": 0,
       "ordTimeOffsetMinutes": 15
+    },
+    {
+      "orderID": "ORD002",
+      "symID": "NIFTY17SEP2622600CE",
+      "type": "market",
+      "orderAction": "buy",
+      "productType": "intraday",
+      "avgPrice": 110.53,
+      "netQty": 65,
+      "fillQty": 65,
+      "orderStatus": "completed",
+      "triggerPrice": 0,
+      "ordTimeOffsetMinutes": 45
+    },
+    {
+      "orderID": "ORD003",
+      "symID": "NIFTY17SEP2622500PE",
+      "type": "limit",
+      "orderAction": "sell",
+      "productType": "normal",
+      "avgPrice": 142.75,
+      "netQty": 65,
+      "fillQty": 0,
+      "orderStatus": "cancelled",
+      "triggerPrice": 0,
+      "ordTimeOffsetMinutes": 90
+    },
+    {
+      "orderID": "ORD004",
+      "symID": "NIFTY17SEP2622400CE",
+      "type": "limit",
+      "orderAction": "buy",
+      "productType": "intraday",
+      "avgPrice": 290.0,
+      "netQty": 65,
+      "fillQty": 0,
+      "orderStatus": "rejected",
+      "triggerPrice": 0,
+      "ordTimeOffsetMinutes": 5
     }
   ]
 }
