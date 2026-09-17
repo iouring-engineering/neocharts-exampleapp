@@ -1,8 +1,8 @@
 {
   "seedPositions": [
     {
-      "symID": "NIFTY",
-      "displayName": "NIFTY 50",
+      "symID": "NIFTY17SEP26FUT",
+      "displayName": "NIFTY FUT 2026-09-17",
       "netQty": 50,
       "avgPrice": 22450.0,
       "netOrgAvgPrice": 22450.0,

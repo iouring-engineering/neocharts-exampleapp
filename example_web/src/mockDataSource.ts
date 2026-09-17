@@ -187,7 +187,10 @@ export function fetchAtmStraddleIntradayJson(): string {
 export const seedOrders = () =>
   data().seedOrders.map((o) => {
     const { ordTimeOffsetMinutes, ...rest } = o
-    const resolved: Record<string, unknown> = { ...rest, symbol: data().niftySymbol }
+    // The index itself isn't tradable -- seed orders/positions/OCO orders
+    // all trade its front-month future instead (see also seedPositions and
+    // oco_orders.json's symID/name).
+    const resolved: Record<string, unknown> = { ...rest, symbol: data().futureSymbols[0] }
     if (typeof ordTimeOffsetMinutes === 'number') {
       resolved.ordTime = formatOrdTime(ordTimeOffsetMinutes)
     }
@@ -199,7 +202,7 @@ export const seedOrders = () =>
 export const seedPositions = () =>
   data().seedPositions.map((p) => ({
     ...p,
-    symbol: data().niftySymbol,
+    symbol: data().futureSymbols[0],
     pnl: 250.0,
     unrealizedPL: 250.0,
     mtm: 250.0,

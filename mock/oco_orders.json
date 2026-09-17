@@ -2,8 +2,8 @@
   "seedOcoOrders": [
     {
       "groupId": "OCO001",
-      "symID": "NIFTY",
-      "name": "NIFTY 50",
+      "symID": "NIFTY17SEP26FUT",
+      "name": "NIFTY FUT 2026-09-17",
       "exchange": "NSE",
       "side": "sell",
       "productType": "intraday",
