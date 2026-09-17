@@ -119,9 +119,11 @@ export function indexSymbolsJson(): string { return JSON.stringify(data().indexS
 // Open every hour of every day -- a real exchange trades ~6h on weekdays
 // only, but this is a demo: it should show live movement no matter when
 // someone runs it, not just 09:15-15:30 IST on a weekday.
-export function marketTimingJson(): string {
+export function marketTimingsJson(): string {
   const sessions = Array.from({ length: 7 }, () => ['0000-2359'])
-  return JSON.stringify({ timezone: 'Asia/Kolkata', sessions, holidays: [], special: {} })
+  return JSON.stringify({
+    NSE: { timezone: 'Asia/Kolkata', sessions, holidays: [], special: {} },
+  })
 }
 
 export function chartTopOptionsJson(): string { return JSON.stringify(data().topOptionsByVolume) }
