@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { mockDataReady } from './nxtChartHost'
 
 // `_flutter.loader` is a global that `index.html`'s `flutter.js` script tag
 // exposes (built by `fvm flutter build web`) -- an external, unversioned API
@@ -28,18 +29,22 @@ export function ChartMount() {
     if (loaded.current || !hostRef.current) return
     loaded.current = true
 
-    // Served from public/build_web, a symlink to ../../../build/web -- see
-    // index.html's flutter.js script tag for why this can't be a plain
-    // "../../build/web" relative path under Vite's dev server.
-    window._flutter.loader.loadEntrypoint({
-      entrypointUrl: '/build_web/main.dart.js',
-      onEntrypointLoaded: async (engineInitializer) => {
-        const appRunner = await engineInitializer.initializeEngine({
-          hostElement: hostRef.current!,
-          assetBase: '/build_web/',
-        })
-        await appRunner.runApp()
-      },
+    // Wait for the mock fixture before booting the engine: `NxtChartHost`'s
+    // getters (e.g. `symbolInfo`) are synchronous and throw until it's ready.
+    mockDataReady.then(() => {
+      // Base URL is VITE_SDK_ASSET_BASE (see .env / index.html's flutter.js
+      // script tag) -- defaults to /build_web/, a symlink to
+      // ../../../build/web for local/CI builds.
+      window._flutter.loader.loadEntrypoint({
+        entrypointUrl: `${import.meta.env.VITE_SDK_ASSET_BASE}main.dart.js`,
+        onEntrypointLoaded: async (engineInitializer) => {
+          const appRunner = await engineInitializer.initializeEngine({
+            hostElement: hostRef.current!,
+            assetBase: import.meta.env.VITE_SDK_ASSET_BASE,
+          })
+          await appRunner.runApp()
+        },
+      })
     })
   }, [])
 
