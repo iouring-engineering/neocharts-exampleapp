@@ -224,7 +224,14 @@ export const nxtChartHost: NxtChartHost = {
   },
 }
 
-export async function startMockFeeds(): Promise<void> {
+/** Resolves once the fixture is loaded -- callers must await this before
+ * mounting the chart, since `symbolInfo` and friends throw synchronously
+ * until then (see mockDataSource.ts's `data()`). */
+export const mockDataReady: Promise<void> = startMockFeeds().catch((err) => {
+  console.error('Failed to start mock feeds:', err)
+})
+
+async function startMockFeeds(): Promise<void> {
   await loadMockData()
   orders = seedOrders()
   positions = seedPositions()
