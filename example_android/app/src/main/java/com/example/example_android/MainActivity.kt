@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             when (call.method) {
                 "symbolInfo" -> result.success(mockData.symbolInfo())
                 "optionSymbols" -> result.success(mockData.optionSymbols())
-                "marketTiming" -> result.success(mockData.marketTiming())
+                "marketTimings" -> result.success(mockData.marketTimings())
                 "hasOCO" -> result.success(false)
                 "isMarketOrderSupported" -> result.success(true)
                 "storageKey" -> result.success("default")

@@ -66,19 +66,20 @@ class MockDataSource(context: Context) {
     // Open every hour of every day -- a real exchange trades ~6h on weekdays
     // only, but this is a demo: it should show live movement no matter when
     // someone runs it, not just 09:15-15:30 IST on a weekday.
-    fun marketTiming(): String {
+    fun marketTimings(): String {
         val sessions = JSONArray()
         for (weekday in 0 until 7) {
             val daySessions = JSONArray()
             daySessions.put("0000-2359")
             sessions.put(daySessions)
         }
-        return JSONObject().apply {
+        val nse = JSONObject().apply {
             put("timezone", "Asia/Kolkata")
             put("sessions", sessions)
             put("holidays", JSONArray())
             put("special", JSONObject())
-        }.toString()
+        }
+        return JSONObject().apply { put("NSE", nse) }.toString()
     }
 
     fun futureSymbols(): String = futureSymbolsArray.toString()
