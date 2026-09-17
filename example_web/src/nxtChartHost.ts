@@ -216,7 +216,14 @@ export const nxtChartHost: NxtChartHost = {
     }
   },
 
+  // The passed set is the complete desired subscription, not a delta to
+  // add onto -- replace, don't accumulate (see js_chart_interface.dart's
+  // marketDataStreamer/dispose for why an additive version broke: a
+  // transient onCancel/onListen pair around every symbol-set change would
+  // wipe out symbols this call had just added, since a bare `add` here
+  // relied on unsubscribeMarketData only ever running as final teardown).
   subscribeMarketData(symbols) {
+    subscribedSymbols.clear()
     for (const id of JSON.parse(symbols) as string[]) subscribedSymbols.add(id)
   },
   unsubscribeMarketData() {
