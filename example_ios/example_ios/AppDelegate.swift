@@ -40,8 +40,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     result(self.mockData.optionSymbols())
                 case "fetchOptionDetails":
                     result(self.mockData.fetchOptionDetails())
-                case "marketTiming":
-                    result(self.mockData.marketTiming())
+                case "marketTimings":
+                    result(self.mockData.marketTimings())
                 case "hasOCO":
                     result(false)
                 case "isMarketOrderSupported":
