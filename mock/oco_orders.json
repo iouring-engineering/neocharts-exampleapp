@@ -23,6 +23,30 @@
         "price": 22700,
         "fillQty": 0
       }
+    },
+    {
+      "groupId": "OCO002",
+      "symID": "NIFTY17SEP2622700CE",
+      "name": "NIFTY 22700 CE 2026-09-17",
+      "exchange": "NSE",
+      "side": "sell",
+      "productType": "intraday",
+      "stopLoss": {
+        "type": "stopLoss",
+        "side": "sell",
+        "triggerPrice": 85,
+        "qty": 65,
+        "price": 82,
+        "fillQty": 0
+      },
+      "target": {
+        "type": "limit",
+        "side": "sell",
+        "triggerPrice": 130,
+        "qty": 65,
+        "price": 130,
+        "fillQty": 0
+      }
     }
   ]
 }
