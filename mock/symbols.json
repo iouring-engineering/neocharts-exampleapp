@@ -1210,6 +1210,13 @@
       "precision": 2,
       "tickSize": 0.05,
       "exchange": "BSE"
+    },
+    {
+      "id": "INDIAVIX",
+      "name": "INDIA VIX",
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
     }
   ],
   "equitySymbols": [
@@ -1355,7 +1362,8 @@
     "SENSEX17SEP2675000CE": 745.0,
     "SENSEX17SEP2675000PE": 1245.0,
     "SENSEX17SEP2675500CE": 496.67,
-    "SENSEX17SEP2675500PE": 1496.67
+    "SENSEX17SEP2675500PE": 1496.67,
+    "INDIAVIX": 13.5
   },
   "topOptionsByVolume": [
     {
