@@ -22,6 +22,7 @@ class NxtChartRepository implements ChartInterface {
     this.streamRate = StreamRate.r1,
     this.liveDataEnabled = true,
     this.benchmarkBarCount,
+    this._symbolId,
   }) {
     _initialize();
   }
@@ -31,6 +32,16 @@ class NxtChartRepository implements ChartInterface {
 
   final StreamRate streamRate;
   final bool liveDataEnabled;
+
+  /// Which symbol this instance charts -- set by [chartInterfaceForSymbol]
+  /// when the user switches via in-chart symbol search. Null (the default
+  /// boot instance) means NIFTY, same as before this field existed.
+  /// Everything else in this mock still ignores it and always reports
+  /// NIFTY's data regardless of the tapped symbol -- this only carries
+  /// enough to let [MockChartDataSource.indexSymbols]' one option-less
+  /// entry (MIDCPNIFTY) round-trip correctly, for exercising the chart's
+  /// FnO layout gating against a real symbol switch.
+  final String? _symbolId;
 
   /// Overrides the chart's own requested bar count on the very first
   /// [loadData] call, so a benchmark run can force a specific dataset size
@@ -138,6 +149,7 @@ class NxtChartRepository implements ChartInterface {
         storageKey: '$storageKey:$symbolId',
         streamRate: streamRate,
         liveDataEnabled: liveDataEnabled,
+        symbolId: symbolId,
       );
     } catch (_) {
       return null;
@@ -148,24 +160,39 @@ class NxtChartRepository implements ChartInterface {
   // MarketDataInterface
   // ---------------------------------------------------------------------------
 
+  /// True only for the one scratch symbol ([MockChartDataSource
+  /// .generateIndexSymbols]'s INDIA VIX) this mock actually varies data
+  /// for -- every other tapped symbol still falls through to NIFTY below.
+  bool get _isIndiaVix => _symbolId == 'INDIAVIX';
+
   @override
   String get symbolInfo {
-    return jsonEncode(_dataSource.niftySymbol);
+    return jsonEncode(
+      _isIndiaVix
+          ? _dataSource.symbolForId('INDIAVIX')
+          : _dataSource.niftySymbol,
+    );
   }
 
   @override
   String? get underlyingSymbolInfo {
+    // INDIA VIX is an index -- it IS the underlying, not a derivative of
+    // one, same as NIFTY itself (see MarketDataInterface.underlyingSymbolInfo).
+    if (_isIndiaVix) {
+      return null;
+    }
+
     return jsonEncode(_dataSource.niftySymbol);
   }
 
   @override
   String get optionSymbols {
-    return jsonEncode(_dataSource.optionChain);
+    return _isIndiaVix ? '[]' : jsonEncode(_dataSource.optionChain);
   }
 
   @override
   String? get futureSymbols {
-    return jsonEncode(_dataSource.generateFutureSymbols());
+    return _isIndiaVix ? '[]' : jsonEncode(_dataSource.generateFutureSymbols());
   }
 
   @override

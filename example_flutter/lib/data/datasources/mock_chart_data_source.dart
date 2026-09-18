@@ -136,7 +136,19 @@ class MockChartDataSource {
   }
 
   List<Map<String, dynamic>> generateIndexSymbols() {
-    return [];
+    return [
+      // The one index in this fixture with no option chain -- lets the
+      // chart layout menu's FnO gating be exercised by actually switching
+      // to it (see NxtChartRepository.chartInterfaceForSymbol).
+      {
+        'id': 'INDIAVIX',
+        'name': 'INDIA VIX',
+        'lotSize': lotSize,
+        'precision': precision,
+        'tickSize': tickSize,
+        'exchange': 'NSE',
+      },
+    ];
   }
 
   bool isFutureSymbol(String symbolId) {
