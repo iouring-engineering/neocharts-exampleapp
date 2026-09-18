@@ -136,7 +136,19 @@ class MockChartDataSource {
   }
 
   List<Map<String, dynamic>> generateIndexSymbols() {
-    return [];
+    return [
+      // The one index in this fixture with no option chain -- lets the
+      // chart layout menu's FnO gating be exercised by actually switching
+      // to it (see NxtChartRepository.chartInterfaceForSymbol).
+      {
+        'id': 'INDIAVIX',
+        'name': 'INDIA VIX',
+        'lotSize': lotSize,
+        'precision': precision,
+        'tickSize': tickSize,
+        'exchange': 'NSE',
+      },
+    ];
   }
 
   bool isFutureSymbol(String symbolId) {
@@ -246,8 +258,7 @@ class MockChartDataSource {
       barCount = ((safeTo - safeFrom) ~/ intervalMs) + 1;
     }
 
-    // Capped at 50K -- the largest dataset size a benchmark run asks for
-    // (see benchmark_config.dart's DatasetSize).
+    // Cap at 50K
     barCount = max(1, min(barCount, 50000));
 
     // ------------------------------------------------------------
@@ -274,6 +285,33 @@ class MockChartDataSource {
 
     final isFuture = isFutureSymbol(symbolId);
 
+    // ------------------------------------------------------------
+    // OPTIONS DETECTION
+    //
+    // Adjust this if your option symbol format is different.
+    //
+    // Examples:
+    // NIFTY24SEP22100CE
+    // NIFTY24SEP22100PE
+    // NIFTY-22100-CE
+    // NIFTY22100CE
+    // ------------------------------------------------------------
+
+    final isCallOption =
+        upperSymbol.endsWith('CE') || upperSymbol.contains('CE');
+
+    final isPutOption =
+        upperSymbol.endsWith('PE') || upperSymbol.contains('PE');
+
+    final isOption = isCallOption || isPutOption;
+
+    // ------------------------------------------------------------
+    // Market instrument
+    //
+    // NIFTY + Futures retain the existing convergence behavior.
+    // Options get their own 130-150 convergence behavior.
+    // ------------------------------------------------------------
+
     final isMarketInstrument = isSpot || isFuture;
 
     // ------------------------------------------------------------
@@ -285,7 +323,11 @@ class MockChartDataSource {
 
     if (isMarketInstrument) {
       minPrice = 22000.0;
-      maxPrice = 23000.0;
+      maxPrice = 22500.0;
+    } else if (isOption) {
+      // Options are allowed to move into the 130-150 range.
+      minPrice = 1.0;
+      maxPrice = 1000.0;
     } else {
       minPrice = 1.0;
       maxPrice = 1000.0;
@@ -297,15 +339,32 @@ class MockChartDataSource {
 
     var price = _livePrices[symbolId] ?? initialPriceForSymbol(symbolId);
 
-    // For Futures, if we don't have a previous historical
-    // price, start close to Spot with a small basis.
+    // ------------------------------------------------------------
+    // FUTURES
+    //
+    // If no previous historical futures price exists,
+    // start close to NIFTY with a small basis.
+    // ------------------------------------------------------------
+
     if (isFuture && !_livePrices.containsKey(symbolId)) {
       final spotPrice = _livePrices['NIFTY'] ?? _niftyLivePrice;
 
-      // Small futures basis.
       final basis = 5.0 + _random.nextDouble() * 15.0;
 
       price = spotPrice + basis;
+    }
+
+    // ------------------------------------------------------------
+    // OPTIONS
+    //
+    // If there is no existing price, start from a reasonable
+    // option premium rather than immediately starting at 130-150.
+    //
+    // The final candles will gradually converge toward 130-150.
+    // ------------------------------------------------------------
+
+    if (isOption && !_livePrices.containsKey(symbolId)) {
+      price = 80.0 + _random.nextDouble() * 35.0;
     }
 
     price = price.clamp(minPrice, maxPrice).toDouble();
@@ -316,7 +375,38 @@ class MockChartDataSource {
     // Movement
     // ------------------------------------------------------------
 
-    final maxMovement = isMarketInstrument ? 25.0 : 5.0;
+    final maxMovement = isMarketInstrument
+        ? 25.0
+        : isOption
+        ? 8.0
+        : 5.0;
+
+    // ------------------------------------------------------------
+    // NIFTY / FUTURES CONVERGENCE
+    // ------------------------------------------------------------
+
+    const marketConvergenceBars = 20;
+
+    const marketTargetMin = 22100.0;
+    const marketTargetMax = 22200.0;
+
+    // ------------------------------------------------------------
+    // OPTIONS CONVERGENCE
+    //
+    // Last 20 candles:
+    //     gradually move toward 130-150
+    //
+    // Last 10 candles:
+    //     stronger upward/steeper movement
+    //
+    // Final candles:
+    //     stay tightly around 130-150.
+    // ------------------------------------------------------------
+
+    const optionConvergenceBars = 20;
+
+    const optionTargetMin = 110.0;
+    const optionTargetMax = 120.0;
 
     final bars = <List<dynamic>>[];
 
@@ -327,39 +417,269 @@ class MockChartDataSource {
     for (var i = 0; i < barCount; i++) {
       final timestamp = startTime + (i * intervalMs);
 
+      final barsRemaining = barCount - 1 - i;
+
+      // ============================================================
+      // MARKET CONVERGENCE
+      //
+      // NIFTY / FUTURES only
+      // ============================================================
+
+      double marketConvergence = 0.0;
+
+      if (isMarketInstrument && barsRemaining < marketConvergenceBars) {
+        final barsIntoConvergence = marketConvergenceBars - barsRemaining;
+
+        marketConvergence = (barsIntoConvergence / marketConvergenceBars).clamp(
+          0.0,
+          1.0,
+        );
+      }
+
+      // ============================================================
+      // OPTION CONVERGENCE
+      // ============================================================
+
+      double optionConvergence = 0.0;
+
+      if (isOption && barsRemaining < optionConvergenceBars) {
+        final barsIntoConvergence = optionConvergenceBars - barsRemaining;
+
+        optionConvergence = (barsIntoConvergence / optionConvergenceBars).clamp(
+          0.0,
+          1.0,
+        );
+      }
+
+      // ------------------------------------------------------------
+      // Open
+      // ------------------------------------------------------------
+
       final open = price;
+
+      // ------------------------------------------------------------
+      // Normal random movement
+      // ------------------------------------------------------------
 
       final movement = (_random.nextDouble() - 0.5) * (maxMovement * 2);
 
+      double closePrice = open + movement;
+
+      // ============================================================
+      // NIFTY / FUTURES
+      //
+      // Existing 22100-22200 convergence.
+      // ============================================================
+
+      if (isMarketInstrument && marketConvergence > 0.0) {
+        final targetPrice =
+            marketTargetMin +
+            _random.nextDouble() * (marketTargetMax - marketTargetMin);
+
+        final pullStrength = marketConvergence * 0.65;
+
+        closePrice = closePrice + ((targetPrice - closePrice) * pullStrength);
+
+        final targetNoise =
+            (_random.nextDouble() - 0.5) * 20.0 * (1.0 - marketConvergence);
+
+        closePrice += targetNoise;
+
+        // ----------------------------------------------------------
+        // Final 10 candles
+        // ----------------------------------------------------------
+
+        if (barsRemaining <= 10) {
+          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+          final allowedOutsideRange = 10.0 * (1.0 - finalPhase);
+
+          closePrice = closePrice.clamp(
+            marketTargetMin - allowedOutsideRange,
+            marketTargetMax + allowedOutsideRange,
+          );
+
+          if (finalPhase > 0.5) {
+            final finalTarget =
+                marketTargetMin +
+                _random.nextDouble() * (marketTargetMax - marketTargetMin);
+
+            closePrice =
+                closePrice + ((finalTarget - closePrice) * finalPhase * 0.6);
+          }
+        }
+      }
+
+      // ============================================================
+      // OPTIONS
+      //
+      // Gradually rise/steepen toward 130-150.
+      // ============================================================
+
+      if (isOption && optionConvergence > 0.0) {
+        // ----------------------------------------------------------
+        // Random target between 130 and 150.
+        // ----------------------------------------------------------
+
+        final targetPrice =
+            optionTargetMin +
+            _random.nextDouble() * (optionTargetMax - optionTargetMin);
+
+        // ----------------------------------------------------------
+        // First 20 candles
+        //
+        // Gradual pull.
+        //
+        // Example:
+        // candle 1  -> weak pull
+        // candle 10 -> medium pull
+        // candle 20 -> strong pull
+        // ----------------------------------------------------------
+
+        double pullStrength = optionConvergence * 0.45;
+
+        // ----------------------------------------------------------
+        // Last 10 candles
+        //
+        // Make the rise noticeably steeper.
+        // ----------------------------------------------------------
+
+        if (barsRemaining <= 10) {
+          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+          // Starts around 0.45 and increases toward 0.90.
+          pullStrength = 0.45 + (finalPhase * 0.45);
+        }
+
+        // Pull current close toward target.
+        closePrice = closePrice + ((targetPrice - closePrice) * pullStrength);
+
+        // ----------------------------------------------------------
+        // Positive bias in final 10 candles.
+        //
+        // This makes the chart visually rise rather than simply
+        // oscillate around the target.
+        // ----------------------------------------------------------
+
+        if (barsRemaining <= 10) {
+          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+          final upwardBias = 1.5 + (finalPhase * 3.0);
+
+          closePrice += upwardBias;
+
+          // Small noise so it doesn't look completely artificial.
+          final noise = (_random.nextDouble() - 0.5) * 2.0 * (1.0 - finalPhase);
+
+          closePrice += noise;
+        }
+
+        // ----------------------------------------------------------
+        // Final 5 candles
+        //
+        // Tighten price into 130-150.
+        // ----------------------------------------------------------
+
+        if (barsRemaining <= 5) {
+          final finalPhase = ((5 - barsRemaining) / 5.0).clamp(0.0, 1.0);
+
+          final finalTarget =
+              optionTargetMin +
+              _random.nextDouble() * (optionTargetMax - optionTargetMin);
+
+          closePrice =
+              closePrice +
+              ((finalTarget - closePrice) * (0.65 + finalPhase * 0.25));
+
+          // Prevent excessive movement outside target.
+          final allowedOutside = 5.0 * (1.0 - finalPhase);
+
+          closePrice = closePrice.clamp(
+            optionTargetMin - allowedOutside,
+            optionTargetMax + allowedOutside,
+          );
+        }
+      }
+
+      // ------------------------------------------------------------
+      // Close
+      // ------------------------------------------------------------
+
       final close = roundTo(
-        (open + movement).clamp(minPrice, maxPrice).toDouble(),
+        closePrice.clamp(minPrice, maxPrice).toDouble(),
         precision,
       );
+
+      // ------------------------------------------------------------
+      // Wicks
+      // ------------------------------------------------------------
 
       final upperWick = _random.nextDouble() * (maxMovement * 0.5);
 
       final lowerWick = _random.nextDouble() * (maxMovement * 0.5);
 
+      double highPrice = max(open, close) + upperWick;
+
+      double lowPrice = min(open, close) - lowerWick;
+
+      // ============================================================
+      // NIFTY / FUTURES WICK CONTROL
+      // ============================================================
+
+      if (isMarketInstrument && barsRemaining <= 10) {
+        highPrice = min(highPrice, marketTargetMax + 15.0);
+
+        lowPrice = max(lowPrice, marketTargetMin - 15.0);
+      }
+
+      // ============================================================
+      // OPTION WICK CONTROL
+      //
+      // Keep the final candles visually around 130-150.
+      // ============================================================
+
+      if (isOption && barsRemaining <= 10) {
+        highPrice = min(highPrice, optionTargetMax + 8.0);
+
+        lowPrice = max(lowPrice, optionTargetMin - 8.0);
+      }
+
+      // ------------------------------------------------------------
+      // High / Low
+      // ------------------------------------------------------------
+
       final high = roundTo(
-        (max(open, close) + upperWick).clamp(minPrice, maxPrice).toDouble(),
+        highPrice.clamp(minPrice, maxPrice).toDouble(),
         precision,
       );
 
       final low = roundTo(
-        (min(open, close) - lowerWick).clamp(minPrice, maxPrice).toDouble(),
+        lowPrice.clamp(minPrice, maxPrice).toDouble(),
         precision,
       );
 
+      // ------------------------------------------------------------
+      // Volume
+      // ------------------------------------------------------------
+
       final volume = 1000 + _random.nextInt(10000);
+
+      // ------------------------------------------------------------
+      // Candle
+      //
+      // [timestamp, open, high, low, close, volume]
+      // ------------------------------------------------------------
 
       bars.add([timestamp, roundTo(open, precision), high, low, close, volume]);
 
+      // ------------------------------------------------------------
       // Next candle starts from previous close.
+      // ------------------------------------------------------------
+
       price = close;
     }
 
     // ------------------------------------------------------------
-    // CRITICAL:
     // Save last historical close for streaming.
     // ------------------------------------------------------------
 
@@ -372,6 +692,8 @@ class MockChartDataSource {
         _niftyLivePrice = lastClose;
       }
     }
+
+    ticks.clear();
 
     return bars;
   }
@@ -389,17 +711,45 @@ class MockChartDataSource {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // ============================================================
-    // 1. SPOT
+    // CONSTANT PRICE RANGES
     // ============================================================
 
-    var spotPrice = _livePrices['NIFTY'] ?? _niftyLivePrice;
+    const double niftyMin = 22100.0;
+    const double niftyMax = 22150.0;
 
+    const double futureMin = 22100.0;
+    const double futureMax = 22150.0;
+
+    const double optionMin = 110.0;
+    const double optionMax = 125.0;
+
+    // ============================================================
+    // 1. SPOT / NIFTY
+    // ============================================================
+
+    var spotPrice = _livePrices['NIFTY'];
+
+    // ------------------------------------------------------------
+    // First time: initialize NIFTY inside 22100 - 22150
+    // ------------------------------------------------------------
+
+    if (spotPrice == null || spotPrice < niftyMin || spotPrice > niftyMax) {
+      spotPrice = niftyMin + (_random.nextDouble() * (niftyMax - niftyMin));
+    }
+
+    // ------------------------------------------------------------
     // Spot movement: -2 to +2
+    // ------------------------------------------------------------
+
     final spotMovement = (_random.nextDouble() - 0.5) * 4.0;
 
     spotPrice += spotMovement;
 
-    spotPrice = spotPrice.clamp(22000.0, 23000.0).toDouble();
+    // ------------------------------------------------------------
+    // Keep NIFTY strictly between 22100 - 22150
+    // ------------------------------------------------------------
+
+    spotPrice = spotPrice.clamp(niftyMin, niftyMax).toDouble();
 
     spotPrice = roundTo(spotPrice, precision);
 
@@ -430,6 +780,7 @@ class MockChartDataSource {
 
     ticks.add({
       'symbolId': 'NIFTY',
+
       'ltp': spotPrice,
       'dayClose': spotPrice,
 
@@ -469,10 +820,18 @@ class MockChartDataSource {
       // Get current option price
       // ----------------------------------------------------------
 
-      var optionPrice = _livePrices[symbolId] ?? toDouble(option['ltp']);
+      var optionPrice = _livePrices[symbolId];
 
-      if (optionPrice <= 0) {
-        optionPrice = 1.0;
+      // ----------------------------------------------------------
+      // First time / invalid price
+      // Initialize between 110 - 125
+      // ----------------------------------------------------------
+
+      if (optionPrice == null ||
+          optionPrice < optionMin ||
+          optionPrice > optionMax) {
+        optionPrice =
+            optionMin + (_random.nextDouble() * (optionMax - optionMin));
       }
 
       // ----------------------------------------------------------
@@ -483,7 +842,11 @@ class MockChartDataSource {
 
       optionPrice += optionMovement;
 
-      optionPrice = max(0.05, optionPrice);
+      // ----------------------------------------------------------
+      // Keep option price between 110 - 125
+      // ----------------------------------------------------------
+
+      optionPrice = optionPrice.clamp(optionMin, optionMax).toDouble();
 
       optionPrice = roundTo(optionPrice, precision);
 
@@ -559,66 +922,61 @@ class MockChartDataSource {
       // Get current Future price
       // ----------------------------------------------------------
 
-      var futurePrice = _livePrices[symbolId] ?? toDouble(future['ltp']);
+      var futurePrice = _livePrices[symbolId];
 
-      // If there is no valid historical future price,
-      // start from Spot.
-      if (futurePrice <= 0) {
-        futurePrice = spotPrice;
+      // ----------------------------------------------------------
+      // First time / invalid price
+      // Initialize between 22100 - 22150
+      // ----------------------------------------------------------
+
+      if (futurePrice == null ||
+          futurePrice < futureMin ||
+          futurePrice > futureMax) {
+        futurePrice =
+            futureMin + (_random.nextDouble() * (futureMax - futureMin));
       }
 
       // ----------------------------------------------------------
-      // Future movement
+      // Future movement: -2 to +2
       //
-      // EXACTLY the same pattern as Spot.
-      //
-      // Difference:
-      // Future movement is 2 to 7 points.
+      // Same range/movement style as NIFTY.
       // ----------------------------------------------------------
 
-      final futureMovementSize = 2.0 + (_random.nextDouble() * 5.0);
-
-      final futureDirection = _random.nextBool() ? 1.0 : -1.0;
-
-      final futureMovement = futureMovementSize * futureDirection;
+      final futureMovement = (_random.nextDouble() - 0.5) * 4.0;
 
       futurePrice += futureMovement;
 
       // ----------------------------------------------------------
-      // Keep Future in valid range
+      // Keep Future between 22100 - 22150
       // ----------------------------------------------------------
 
-      futurePrice = futurePrice.clamp(22000.0, 23000.0).toDouble();
+      futurePrice = futurePrice.clamp(futureMin, futureMax).toDouble();
 
       futurePrice = roundTo(futurePrice, precision);
 
       // ----------------------------------------------------------
       // Save Future live price
-      // SAME PATTERN AS SPOT
       // ----------------------------------------------------------
 
       _livePrices[symbolId] = futurePrice;
 
-      // Also update the future map.
+      // Also update future map.
       future['ltp'] = futurePrice;
 
       // ----------------------------------------------------------
       // Previous Future price
-      // SAME PATTERN AS SPOT
       // ----------------------------------------------------------
 
       final previousFuture = _previousTickPrices[symbolId] ?? futurePrice;
 
       // ----------------------------------------------------------
       // Future change
-      // SAME PATTERN AS SPOT
       // ----------------------------------------------------------
 
       final futureChange = roundTo(futurePrice - previousFuture, precision);
 
       // ----------------------------------------------------------
       // Future change %
-      // SAME PATTERN AS SPOT
       // ----------------------------------------------------------
 
       final futureChangePer = previousFuture != 0
@@ -627,7 +985,6 @@ class MockChartDataSource {
 
       // ----------------------------------------------------------
       // Save previous Future price
-      // SAME PATTERN AS SPOT
       // ----------------------------------------------------------
 
       _previousTickPrices[symbolId] = futurePrice;
