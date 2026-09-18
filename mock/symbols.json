@@ -18,7 +18,8 @@
       "exchange": "NSE",
       "strike": "22000",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622000PE",
@@ -30,7 +31,8 @@
       "exchange": "NSE",
       "strike": "22000",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622050CE",
@@ -42,7 +44,8 @@
       "exchange": "NSE",
       "strike": "22050",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622050PE",
@@ -54,7 +57,8 @@
       "exchange": "NSE",
       "strike": "22050",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622100CE",
@@ -66,7 +70,8 @@
       "exchange": "NSE",
       "strike": "22100",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622100PE",
@@ -78,7 +83,8 @@
       "exchange": "NSE",
       "strike": "22100",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622150CE",
@@ -90,7 +96,8 @@
       "exchange": "NSE",
       "strike": "22150",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622150PE",
@@ -102,7 +109,8 @@
       "exchange": "NSE",
       "strike": "22150",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622200CE",
@@ -114,7 +122,8 @@
       "exchange": "NSE",
       "strike": "22200",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622200PE",
@@ -126,7 +135,8 @@
       "exchange": "NSE",
       "strike": "22200",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622250CE",
@@ -138,7 +148,8 @@
       "exchange": "NSE",
       "strike": "22250",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622250PE",
@@ -150,7 +161,8 @@
       "exchange": "NSE",
       "strike": "22250",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622300CE",
@@ -162,7 +174,8 @@
       "exchange": "NSE",
       "strike": "22300",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622300PE",
@@ -174,7 +187,8 @@
       "exchange": "NSE",
       "strike": "22300",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622350CE",
@@ -186,7 +200,8 @@
       "exchange": "NSE",
       "strike": "22350",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622350PE",
@@ -198,7 +213,8 @@
       "exchange": "NSE",
       "strike": "22350",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622400CE",
@@ -210,7 +226,8 @@
       "exchange": "NSE",
       "strike": "22400",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622400PE",
@@ -222,7 +239,8 @@
       "exchange": "NSE",
       "strike": "22400",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622450CE",
@@ -234,7 +252,8 @@
       "exchange": "NSE",
       "strike": "22450",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622450PE",
@@ -246,7 +265,8 @@
       "exchange": "NSE",
       "strike": "22450",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622500CE",
@@ -258,7 +278,8 @@
       "exchange": "NSE",
       "strike": "22500",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622500PE",
@@ -270,7 +291,8 @@
       "exchange": "NSE",
       "strike": "22500",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622550CE",
@@ -282,7 +304,8 @@
       "exchange": "NSE",
       "strike": "22550",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622550PE",
@@ -294,7 +317,8 @@
       "exchange": "NSE",
       "strike": "22550",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622600CE",
@@ -306,7 +330,8 @@
       "exchange": "NSE",
       "strike": "22600",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622600PE",
@@ -318,7 +343,8 @@
       "exchange": "NSE",
       "strike": "22600",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622650CE",
@@ -330,7 +356,8 @@
       "exchange": "NSE",
       "strike": "22650",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622650PE",
@@ -342,7 +369,8 @@
       "exchange": "NSE",
       "strike": "22650",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622700CE",
@@ -354,7 +382,8 @@
       "exchange": "NSE",
       "strike": "22700",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622700PE",
@@ -366,7 +395,8 @@
       "exchange": "NSE",
       "strike": "22700",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622750CE",
@@ -378,7 +408,8 @@
       "exchange": "NSE",
       "strike": "22750",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622750PE",
@@ -390,7 +421,8 @@
       "exchange": "NSE",
       "strike": "22750",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622800CE",
@@ -402,7 +434,8 @@
       "exchange": "NSE",
       "strike": "22800",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622800PE",
@@ -414,7 +447,8 @@
       "exchange": "NSE",
       "strike": "22800",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622850CE",
@@ -426,7 +460,8 @@
       "exchange": "NSE",
       "strike": "22850",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622850PE",
@@ -438,7 +473,8 @@
       "exchange": "NSE",
       "strike": "22850",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622900CE",
@@ -450,7 +486,8 @@
       "exchange": "NSE",
       "strike": "22900",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622900PE",
@@ -462,7 +499,8 @@
       "exchange": "NSE",
       "strike": "22900",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622950CE",
@@ -474,7 +512,8 @@
       "exchange": "NSE",
       "strike": "22950",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2622950PE",
@@ -486,7 +525,8 @@
       "exchange": "NSE",
       "strike": "22950",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623000CE",
@@ -498,7 +538,8 @@
       "exchange": "NSE",
       "strike": "23000",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623000PE",
@@ -510,7 +551,8 @@
       "exchange": "NSE",
       "strike": "23000",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623050CE",
@@ -522,7 +564,8 @@
       "exchange": "NSE",
       "strike": "23050",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623050PE",
@@ -534,7 +577,8 @@
       "exchange": "NSE",
       "strike": "23050",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623100CE",
@@ -546,7 +590,8 @@
       "exchange": "NSE",
       "strike": "23100",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623100PE",
@@ -558,7 +603,8 @@
       "exchange": "NSE",
       "strike": "23100",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623150CE",
@@ -570,7 +616,8 @@
       "exchange": "NSE",
       "strike": "23150",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623150PE",
@@ -582,7 +629,8 @@
       "exchange": "NSE",
       "strike": "23150",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623200CE",
@@ -594,7 +642,8 @@
       "exchange": "NSE",
       "strike": "23200",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623200PE",
@@ -606,7 +655,8 @@
       "exchange": "NSE",
       "strike": "23200",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623250CE",
@@ -618,7 +668,8 @@
       "exchange": "NSE",
       "strike": "23250",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623250PE",
@@ -630,7 +681,8 @@
       "exchange": "NSE",
       "strike": "23250",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623300CE",
@@ -642,7 +694,8 @@
       "exchange": "NSE",
       "strike": "23300",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623300PE",
@@ -654,7 +707,8 @@
       "exchange": "NSE",
       "strike": "23300",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623350CE",
@@ -666,7 +720,8 @@
       "exchange": "NSE",
       "strike": "23350",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623350PE",
@@ -678,7 +733,8 @@
       "exchange": "NSE",
       "strike": "23350",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623400CE",
@@ -690,7 +746,8 @@
       "exchange": "NSE",
       "strike": "23400",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623400PE",
@@ -702,7 +759,8 @@
       "exchange": "NSE",
       "strike": "23400",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623450CE",
@@ -714,7 +772,8 @@
       "exchange": "NSE",
       "strike": "23450",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623450PE",
@@ -726,7 +785,8 @@
       "exchange": "NSE",
       "strike": "23450",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623500CE",
@@ -738,7 +798,8 @@
       "exchange": "NSE",
       "strike": "23500",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623500PE",
@@ -750,7 +811,8 @@
       "exchange": "NSE",
       "strike": "23500",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623550CE",
@@ -762,7 +824,8 @@
       "exchange": "NSE",
       "strike": "23550",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623550PE",
@@ -774,7 +837,8 @@
       "exchange": "NSE",
       "strike": "23550",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623600CE",
@@ -786,7 +850,8 @@
       "exchange": "NSE",
       "strike": "23600",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623600PE",
@@ -798,7 +863,8 @@
       "exchange": "NSE",
       "strike": "23600",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623650CE",
@@ -810,7 +876,8 @@
       "exchange": "NSE",
       "strike": "23650",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623650PE",
@@ -822,7 +889,8 @@
       "exchange": "NSE",
       "strike": "23650",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623700CE",
@@ -834,7 +902,8 @@
       "exchange": "NSE",
       "strike": "23700",
       "optType": "CE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
     },
     {
       "id": "NIFTY17SEP2623700PE",
@@ -846,7 +915,248 @@
       "exchange": "NSE",
       "strike": "23700",
       "optType": "PE",
-      "weekly": "N"
+      "weekly": "N",
+      "undID": "NIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2647000CE",
+      "name": "BANKNIFTY 47000 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "47000",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2647000PE",
+      "name": "BANKNIFTY 47000 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "47000",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2647500CE",
+      "name": "BANKNIFTY 47500 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "47500",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2647500PE",
+      "name": "BANKNIFTY 47500 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "47500",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2648000CE",
+      "name": "BANKNIFTY 48000 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "48000",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2648000PE",
+      "name": "BANKNIFTY 48000 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "48000",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2648500CE",
+      "name": "BANKNIFTY 48500 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "48500",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2648500PE",
+      "name": "BANKNIFTY 48500 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "48500",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2649000CE",
+      "name": "BANKNIFTY 49000 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "49000",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP2649000PE",
+      "name": "BANKNIFTY 49000 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "strike": "49000",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "SENSEX17SEP2673500CE",
+      "name": "SENSEX 73500 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "73500",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2673500PE",
+      "name": "SENSEX 73500 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "73500",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2674000CE",
+      "name": "SENSEX 74000 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "74000",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2674000PE",
+      "name": "SENSEX 74000 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "74000",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2674500CE",
+      "name": "SENSEX 74500 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "74500",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2674500PE",
+      "name": "SENSEX 74500 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "74500",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2675000CE",
+      "name": "SENSEX 75000 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "75000",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2675000PE",
+      "name": "SENSEX 75000 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "75000",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2675500CE",
+      "name": "SENSEX 75500 CE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "75500",
+      "optType": "CE",
+      "weekly": "N",
+      "undID": "SENSEX"
+    },
+    {
+      "id": "SENSEX17SEP2675500PE",
+      "name": "SENSEX 75500 PE 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "strike": "75500",
+      "optType": "PE",
+      "weekly": "N",
+      "undID": "SENSEX"
     }
   ],
   "futureSymbols": [
@@ -857,12 +1167,100 @@
       "precision": 2,
       "tickSize": 0.05,
       "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "undID": "NIFTY"
+    },
+    {
+      "id": "BANKNIFTY17SEP26FUT",
+      "name": "BANKNIFTY FUT 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "NSE",
+      "undID": "BANKNIFTY"
+    },
+    {
+      "id": "SENSEX17SEP26FUT",
+      "name": "SENSEX FUT 2026-09-17",
+      "precision": 2,
+      "tickSize": 0.05,
+      "expiry": "2026-09-17",
+      "exchange": "BSE",
+      "undID": "SENSEX"
+    }
+  ],
+  "indexSymbols": [
+    {
+      "id": "NIFTY",
+      "name": "NIFTY 50",
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "BANKNIFTY",
+      "name": "BANKNIFTY",
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "SENSEX",
+      "name": "SENSEX",
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "BSE"
+    }
+  ],
+  "equitySymbols": [
+    {
+      "id": "RELIANCE",
+      "name": "Reliance Industries",
+      "lotSize": 1,
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "TCS",
+      "name": "Tata Consultancy Services",
+      "lotSize": 1,
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "INFY",
+      "name": "Infosys",
+      "lotSize": 1,
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "HDFCBANK",
+      "name": "HDFC Bank",
+      "lotSize": 1,
+      "precision": 2,
+      "tickSize": 0.05,
+      "exchange": "NSE"
+    },
+    {
+      "id": "ICICIBANK",
+      "name": "ICICI Bank",
+      "lotSize": 1,
+      "precision": 2,
+      "tickSize": 0.05,
       "exchange": "NSE"
     }
   ],
-  "indexSymbols": [],
   "basePrices": {
     "NIFTY": 22600.0,
+    "RELIANCE": 2940.0,
+    "TCS": 4150.0,
+    "INFY": 1850.0,
+    "HDFCBANK": 1680.0,
+    "ICICIBANK": 1240.0,
     "NIFTY17SEP2622000CE": 744.6359316941803,
     "NIFTY17SEP2622000PE": 172.52886737610035,
     "NIFTY17SEP2622050CE": 678.1759560928565,
@@ -933,7 +1331,31 @@
     "NIFTY17SEP2623650PE": 1168.1917067330044,
     "NIFTY17SEP2623700CE": 124.56748125502676,
     "NIFTY17SEP2623700PE": 1215.9714078612642,
-    "NIFTY17SEP26FUT": 22600.0
+    "NIFTY17SEP26FUT": 22600.0,
+    "BANKNIFTY": 48250.0,
+    "SENSEX": 74500.0,
+    "BANKNIFTY17SEP26FUT": 48250.0,
+    "SENSEX17SEP26FUT": 74500.0,
+    "BANKNIFTY17SEP2647000CE": 1571.67,
+    "BANKNIFTY17SEP2647000PE": 321.67,
+    "BANKNIFTY17SEP2647500CE": 1232.5,
+    "BANKNIFTY17SEP2647500PE": 482.5,
+    "BANKNIFTY17SEP2648000CE": 1215.0,
+    "BANKNIFTY17SEP2648000PE": 965.0,
+    "BANKNIFTY17SEP2648500CE": 482.5,
+    "BANKNIFTY17SEP2648500PE": 732.5,
+    "BANKNIFTY17SEP2649000CE": 321.67,
+    "BANKNIFTY17SEP2649000PE": 1071.67,
+    "SENSEX17SEP2673500CE": 1496.67,
+    "SENSEX17SEP2673500PE": 496.67,
+    "SENSEX17SEP2674000CE": 1245.0,
+    "SENSEX17SEP2674000PE": 745.0,
+    "SENSEX17SEP2674500CE": 1490.0,
+    "SENSEX17SEP2674500PE": 1490.0,
+    "SENSEX17SEP2675000CE": 745.0,
+    "SENSEX17SEP2675000PE": 1245.0,
+    "SENSEX17SEP2675500CE": 496.67,
+    "SENSEX17SEP2675500PE": 1496.67
   },
   "topOptionsByVolume": [
     {

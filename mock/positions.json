@@ -1,13 +1,49 @@
 {
   "seedPositions": [
     {
-      "symID": "NIFTY",
-      "displayName": "NIFTY 50",
+      "symID": "NIFTY17SEP26FUT",
+      "displayName": "NIFTY FUT 2026-09-17",
       "netQty": 50,
       "avgPrice": 22450.0,
       "netOrgAvgPrice": 22450.0,
       "realizedPnl": 0.0,
       "realizedOrgPnl": 0.0,
+      "multiplier": 1.0,
+      "priceFactor": 1.0,
+      "productType": "intraday"
+    },
+    {
+      "symID": "NIFTY17SEP2622600CE",
+      "displayName": "NIFTY 22600 CE 2026-09-17",
+      "netQty": 65,
+      "avgPrice": 108.0,
+      "netOrgAvgPrice": 108.0,
+      "realizedPnl": 0.0,
+      "realizedOrgPnl": 0.0,
+      "multiplier": 1.0,
+      "priceFactor": 1.0,
+      "productType": "intraday"
+    },
+    {
+      "symID": "NIFTY17SEP2622400PE",
+      "displayName": "NIFTY 22400 PE 2026-09-17",
+      "netQty": -65,
+      "avgPrice": 85.0,
+      "netOrgAvgPrice": 85.0,
+      "realizedPnl": 320.0,
+      "realizedOrgPnl": 320.0,
+      "multiplier": 1.0,
+      "priceFactor": 1.0,
+      "productType": "normal"
+    },
+    {
+      "symID": "NIFTY17SEP2622550CE",
+      "displayName": "NIFTY 22550 CE 2026-09-17",
+      "netQty": 0,
+      "avgPrice": 195.0,
+      "netOrgAvgPrice": 195.0,
+      "realizedPnl": 480.0,
+      "realizedOrgPnl": 480.0,
       "multiplier": 1.0,
       "priceFactor": 1.0,
       "productType": "intraday"
