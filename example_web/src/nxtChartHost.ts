@@ -17,7 +17,7 @@ import {
   indexSymbolsJson,
   loadMockData,
   makeBars,
-  marketTimingJson,
+  marketTimingsJson,
   nextTicks,
   optionSymbolsJson,
   searchSymbols,
@@ -35,7 +35,7 @@ export interface NxtChartHost {
   readonly optionSymbols: string
   readonly futureSymbols: string | null
   readonly indexSymbols: string | null
-  readonly marketTiming: string
+  readonly marketTimings: string
   readonly hasOCO: boolean
   readonly isMarketOrderSupported: boolean
   readonly storageKey: string
@@ -122,7 +122,7 @@ export const nxtChartHost: NxtChartHost = {
   get optionSymbols() { return optionSymbolsJson() },
   get futureSymbols() { return futureSymbolsJson() },
   get indexSymbols() { return indexSymbolsJson() },
-  get marketTiming() { return marketTimingJson() },
+  get marketTimings() { return marketTimingsJson() },
   get hasOCO() { return true },
   get isMarketOrderSupported() { return true },
   get storageKey() { return 'js-host-demo' },

@@ -201,12 +201,14 @@ class NxtChartRepository implements ChartInterface {
   }
 
   @override
-  String get marketTiming {
+  String get marketTimings {
     return jsonEncode({
-      'timezone': 'Asia/Kolkata',
-      'sessions': List.generate(7, (_) => ['0000-2359']),
-      'holidays': <String>[],
-      'special': <String, dynamic>{},
+      'NSE': {
+        'timezone': 'Asia/Kolkata',
+        'sessions': List.generate(7, (_) => ['0000-2359']),
+        'holidays': <String>[],
+        'special': <String, dynamic>{},
+      },
     });
   }
 

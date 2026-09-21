@@ -73,13 +73,15 @@ final class MockDataSource {
     // Open every hour of every day -- a real exchange trades ~6h on weekdays
     // only, but this is a demo: it should show live movement no matter when
     // someone runs it, not just 09:15-15:30 IST on a weekday.
-    func marketTiming() -> String {
+    func marketTimings() -> String {
         let sessions: [[String]] = (0 ..< 7).map { _ in ["0000-2359"] }
         return toJson([
-            "timezone": "Asia/Kolkata",
-            "sessions": sessions,
-            "holidays": [],
-            "special": [:],
+            "NSE": [
+                "timezone": "Asia/Kolkata",
+                "sessions": sessions,
+                "holidays": [],
+                "special": [:],
+            ],
         ])
     }
 
