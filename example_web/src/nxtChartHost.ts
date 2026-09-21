@@ -4,27 +4,35 @@
 // the actual contract `lib/src/channel/js_chart_interface.dart` reads.
 
 import {
+  atmSymbolsForJson,
   atmSymbolsJson,
+  chartTopOptionsForJson,
   chartTopOptionsJson,
+  fetchAtmIvIntradayForJson,
   fetchAtmIvIntradayJson,
+  fetchAtmStraddleIntradayForJson,
   fetchAtmStraddleIntradayJson,
   fetchOIAnalysisJson,
   fetchOIChangeJson,
   fetchOIJson,
   fetchOptionDetailsJson,
+  fetchPcrIntradayForJson,
   fetchPcrIntradayJson,
+  futureSymbolsForJson,
   futureSymbolsJson,
   indexSymbolsJson,
   loadMockData,
   makeBars,
   marketTimingsJson,
   nextTicks,
+  optionSymbolsForJson,
   optionSymbolsJson,
   searchSymbols,
   seedOcoOrders,
   seedOrders,
   seedPositions,
   symbolInfoJson,
+  underlyingSymbolInfoForJson,
 } from './mockDataSource'
 
 export const THEME_STORAGE_KEY = 'nxtchart-demo-theme'
@@ -71,6 +79,15 @@ export interface NxtChartHost {
   fetchAtmStraddleIntraday(): Promise<string>
   fetchAtmIvIntraday(): Promise<string>
   fundsData(): Promise<string>
+
+  underlyingSymbolInfoFor(symbolId: string): Promise<string | null>
+  optionSymbolsFor(underlyingId: string): Promise<string>
+  futureSymbolsFor(underlyingId: string): Promise<string | null>
+  atmSymbolsFor(underlyingId: string): Promise<string | null>
+  chartTopOptionsFor(underlyingId: string): Promise<string>
+  fetchPcrIntradayFor(underlyingId: string): Promise<string>
+  fetchAtmStraddleIntradayFor(underlyingId: string): Promise<string>
+  fetchAtmIvIntradayFor(underlyingId: string): Promise<string>
 
   placeOrder(params: string): void
   modifyOrder(params: string): void
@@ -146,6 +163,15 @@ export const nxtChartHost: NxtChartHost = {
   fetchAtmStraddleIntraday() { return Promise.resolve(fetchAtmStraddleIntradayJson()) },
   fetchAtmIvIntraday() { return Promise.resolve(fetchAtmIvIntradayJson()) },
   fundsData() { return Promise.resolve(JSON.stringify({ availableMargin: 347500.0, usedMargin: 152500.0 })) },
+
+  underlyingSymbolInfoFor(symbolId) { return Promise.resolve(underlyingSymbolInfoForJson(symbolId)) },
+  optionSymbolsFor(underlyingId) { return Promise.resolve(optionSymbolsForJson(underlyingId)) },
+  futureSymbolsFor(underlyingId) { return Promise.resolve(futureSymbolsForJson(underlyingId)) },
+  atmSymbolsFor(underlyingId) { return Promise.resolve(atmSymbolsForJson(underlyingId)) },
+  chartTopOptionsFor(underlyingId) { return Promise.resolve(chartTopOptionsForJson(underlyingId)) },
+  fetchPcrIntradayFor(underlyingId) { return Promise.resolve(fetchPcrIntradayForJson(underlyingId)) },
+  fetchAtmStraddleIntradayFor(underlyingId) { return Promise.resolve(fetchAtmStraddleIntradayForJson(underlyingId)) },
+  fetchAtmIvIntradayFor(underlyingId) { return Promise.resolve(fetchAtmIvIntradayForJson(underlyingId)) },
 
   placeOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>

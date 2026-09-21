@@ -99,6 +99,21 @@ class MainActivity : AppCompatActivity() {
                 "fetchPcrIntraday" -> result.success(mockData.fetchPcrIntraday())
                 "fetchAtmStraddleIntraday" -> result.success(mockData.fetchAtmStraddleIntraday())
                 "fetchAtmIvIntraday" -> result.success(mockData.fetchAtmIvIntraday())
+                // Parameterized replacements (xxxFor) -- scoped to an explicit id
+                // instead of "whatever's currently charted." underlyingSymbolInfoFor
+                // is called on every chart load; the other 7 aren't called by the
+                // SDK yet, but still need a real case here or every call falls
+                // through to notImplemented() below. This mock is single-underlying
+                // (NIFTY only), so these ignore the given id, same as every ambient
+                // member above.
+                "underlyingSymbolInfoFor" -> result.success(mockData.symbolInfo())
+                "optionSymbolsFor" -> result.success(mockData.optionSymbols())
+                "futureSymbolsFor" -> result.success(mockData.futureSymbols())
+                "atmSymbolsFor" -> result.success(null)
+                "chartTopOptionsFor" -> result.success(mockData.chartTopOptions())
+                "fetchPcrIntradayFor" -> result.success(mockData.fetchPcrIntraday())
+                "fetchAtmStraddleIntradayFor" -> result.success(mockData.fetchAtmStraddleIntraday())
+                "fetchAtmIvIntradayFor" -> result.success(mockData.fetchAtmIvIntraday())
                 "loadData" -> {
                     val symbolId = call.argument<String>("symbolId") ?: "NIFTY"
                     val intervalSeconds = call.argument<Int>("intervalSeconds") ?: 60

@@ -70,6 +70,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     result(self.mockData.fetchAtmStraddleIntraday())
                 case "fetchAtmIvIntraday":
                     result(self.mockData.fetchAtmIvIntraday())
+                // Parameterized replacements (xxxFor) -- scoped to an explicit id
+                // instead of "whatever's currently charted." underlyingSymbolInfoFor
+                // is called on every chart load; the other 7 aren't called by the
+                // SDK yet, but still need a real case here or every call falls
+                // through to the default case below. This mock is single-underlying
+                // (NIFTY only), so these ignore the given id, same as every ambient
+                // member above.
+                case "underlyingSymbolInfoFor":
+                    result(self.mockData.symbolInfo())
+                case "optionSymbolsFor":
+                    result(self.mockData.optionSymbols())
+                case "futureSymbolsFor":
+                    result(self.mockData.futureSymbols())
+                case "atmSymbolsFor":
+                    result(nil)
+                case "chartTopOptionsFor":
+                    result(self.mockData.chartTopOptions())
+                case "fetchPcrIntradayFor":
+                    result(self.mockData.fetchPcrIntraday())
+                case "fetchAtmStraddleIntradayFor":
+                    result(self.mockData.fetchAtmStraddleIntraday())
+                case "fetchAtmIvIntradayFor":
+                    result(self.mockData.fetchAtmIvIntraday())
                 case "loadData":
                     let args = call.arguments as? [String: Any]
                     let symbolId = args?["symbolId"] as? String ?? "NIFTY"
