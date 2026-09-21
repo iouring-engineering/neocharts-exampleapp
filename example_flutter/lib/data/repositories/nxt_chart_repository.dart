@@ -344,6 +344,64 @@ class NxtChartRepository implements ChartInterface {
   }
 
   // ---------------------------------------------------------------------------
+  // Parameterized replacements (xxxFor) -- scoped to an explicit id instead
+  // of "whatever's currently charted." underlyingSymbolInfoFor is called on
+  // every chart load; the other 7 aren't called by the SDK yet, but still
+  // need a real body -- `implements ChartInterface` won't compile without
+  // one. This mock is single-underlying (NIFTY, plus the option-less
+  // INDIAVIX scratch symbol) -- same as every ambient member above, these
+  // ignore the given id beyond that one INDIAVIX check.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<String?> underlyingSymbolInfoFor(String symbolId) async {
+    if (symbolId == 'INDIAVIX') {
+      return null;
+    }
+
+    return jsonEncode(_dataSource.niftySymbol);
+  }
+
+  @override
+  Future<String> optionSymbolsFor(String underlyingId) async {
+    return underlyingId == 'INDIAVIX' ? '[]' : jsonEncode(_dataSource.optionChain);
+  }
+
+  @override
+  Future<String?> futureSymbolsFor(String underlyingId) async {
+    return underlyingId == 'INDIAVIX'
+        ? '[]'
+        : jsonEncode(_dataSource.generateFutureSymbols());
+  }
+
+  @override
+  Future<String?> atmSymbolsFor(String underlyingId) async {
+    final result = _dataSource.atmOptions();
+
+    return result.isEmpty ? null : jsonEncode(result);
+  }
+
+  @override
+  Future<String> chartTopOptionsFor(String underlyingId) async {
+    return jsonEncode(_dataSource.topOptionsByVolume());
+  }
+
+  @override
+  Future<String> fetchPcrIntradayFor(String underlyingId) async {
+    return jsonEncode(_dataSource.pcrIntradaySeries());
+  }
+
+  @override
+  Future<String> fetchAtmStraddleIntradayFor(String underlyingId) async {
+    return jsonEncode(_dataSource.atmStraddleIntradaySeries());
+  }
+
+  @override
+  Future<String> fetchAtmIvIntradayFor(String underlyingId) async {
+    return jsonEncode(_dataSource.atmIvIntradaySeries());
+  }
+
+  // ---------------------------------------------------------------------------
   // TradeInterface
   // ---------------------------------------------------------------------------
 
