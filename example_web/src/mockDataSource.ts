@@ -244,6 +244,79 @@ export function atmSymbolsJson(): string {
   return JSON.stringify(result)
 }
 
+// -------------------------------------------------------------------------
+// Parameterized reads (`xxxFor`) -- the host-side scoping the Dart SDK's
+// `underlyingSymbolInfoFor`/`optionSymbolsFor`/etc. now delegate to,
+// instead of the ambient getters above plus JsChartInterface's own
+// client-side filtering. See MarketDataInterface's dartdoc on each
+// `xxxFor` member for the exact contract each of these implements.
+// -------------------------------------------------------------------------
+
+// The underlyings themselves -- entries with no `undID` of their own.
+// `equitySymbols` are included since an equity is its own underlying too,
+// even though this fixture's `optionChain` only has index derivatives.
+function underlyingCandidates(): SymbolInfo[] {
+  return [...data().indexSymbols, ...data().equitySymbols]
+}
+
+// Any symbol in the fixture's full universe, by id -- unlike symbolByID
+// (tradable derivatives only), this also matches an underlying itself,
+// since underlyingSymbolInfoFor can be asked to resolve a spot/index id.
+function anySymbolByID(id: string): SymbolInfo | undefined {
+  return [
+    ...data().indexSymbols,
+    ...data().equitySymbols,
+    ...data().optionChain,
+    ...data().futureSymbols,
+  ].find((s) => s.id === id)
+}
+
+export function underlyingSymbolInfoForJson(symbolId: string): string | null {
+  const symbol = anySymbolByID(symbolId)
+  if (!symbol?.undID) return null
+  const underlying = underlyingCandidates().find((s) => s.id === symbol.undID)
+  return underlying ? JSON.stringify(underlying) : null
+}
+
+export function optionSymbolsForJson(underlyingId: string): string {
+  return JSON.stringify(data().optionChain.filter((s) => s.undID === underlyingId))
+}
+
+export function futureSymbolsForJson(underlyingId: string): string {
+  return JSON.stringify(data().futureSymbols.filter((s) => s.undID === underlyingId))
+}
+
+export function atmSymbolsForJson(underlyingId: string): string | null {
+  const parsed = JSON.parse(atmSymbolsJson()) as Record<string, [SymbolInfo, SymbolInfo] | null>
+  const pair = parsed[underlyingId]
+  return pair ? JSON.stringify(pair) : null
+}
+
+// `topOptionsByVolume` carries no `undID` of its own -- resolved through
+// each entry's matching `optionChain` symbol, which does.
+export function chartTopOptionsForJson(underlyingId: string): string {
+  const filtered = data().topOptionsByVolume.filter((top) => {
+    const match = data().optionChain.find((o) => o.id === top.symId)
+    return match?.undID === underlyingId
+  })
+  return JSON.stringify(filtered)
+}
+
+// This fixture only models one underlying's worth of intraday OI-derived
+// history -- real per-underlying scoping isn't meaningfully demonstrable
+// with a single-series fixture, so these three ignore `underlyingId` and
+// return the same series [fetchPcrIntraday]/[fetchAtmStraddleIntraday]/
+// [fetchAtmIvIntraday] already did.
+export function fetchPcrIntradayForJson(_underlyingId: string): string {
+  return fetchPcrIntradayJson()
+}
+export function fetchAtmStraddleIntradayForJson(_underlyingId: string): string {
+  return fetchAtmStraddleIntradayJson()
+}
+export function fetchAtmIvIntradayForJson(_underlyingId: string): string {
+  return fetchAtmIvIntradayJson()
+}
+
 export function searchSymbols(query: string): string {
   const keyword = query.trim().toLowerCase()
   if (!keyword) return JSON.stringify([])
