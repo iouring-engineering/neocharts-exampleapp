@@ -364,7 +364,9 @@ class NxtChartRepository implements ChartInterface {
 
   @override
   Future<String> optionSymbolsFor(String underlyingId) async {
-    return underlyingId == 'INDIAVIX' ? '[]' : jsonEncode(_dataSource.optionChain);
+    return underlyingId == 'INDIAVIX'
+        ? '[]'
+        : jsonEncode(_dataSource.optionChain);
   }
 
   @override
