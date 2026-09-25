@@ -72,13 +72,6 @@ Future<void> createAlert(
 Finder findAlertListItem() =>
     find.byKey(Key(ChartTestKeys.alertListItem(alertId)));
 
-Future<void> tapAlertStatusBadge(PatrolIntegrationTester $) async {
-  await $.tester.tap(
-    find.byKey(Key(ChartTestKeys.alertListStatusBadge(alertId))),
-  );
-  await $.pumpAndSettle();
-}
-
 Future<void> tapAlertModifyIcon(PatrolIntegrationTester $) async {
   await $.tester.tap(
     find.byKey(Key(ChartTestKeys.alertListModifyBtn(alertId))),
