@@ -6,12 +6,10 @@ import 'package:patrol/patrol.dart';
 import '../helpers.dart';
 import 'alerts_test_helpers.dart';
 
-// Modify alert flow (the alerts list's Modify icon / status badge -> the
-// same create/modify dialog):
+// Modify alert flow (the alerts list's Modify icon -> the same
+// create/modify dialog):
 //   - Same dialog widget as create, just pre-filled from the existing
 //     alert's triggerPrice and with a "Modify Alert" submit button instead.
-//   - Both the status badge and the dedicated Modify icon open it -- the
-//     badge doubles as an entry point.
 //   - Same validation as create (non-empty + parseable-as-double), and the
 //     same dismissible-barrier-only Cancel path.
 //
@@ -43,18 +41,6 @@ void main() {
         await tapOutsideModal($);
       },
     );
-
-    patrolTest('the status badge also opens the modify dialog', ($) async {
-      await openChartAndAwaitLoad($);
-      await createAlert($);
-      await waitUntilPresent($, findAlertListItem());
-
-      await tapAlertStatusBadge($);
-
-      expect(find.text('Modify Alert'), findsOneWidget);
-
-      await tapOutsideModal($);
-    });
   });
 
   group('Alerts — modify validation', () {
