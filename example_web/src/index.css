@@ -3,6 +3,8 @@ body,
 #root {
   margin: 0;
   height: 100%;
+  /* Windows scrollbars take width; a sub-pixel canvas overflow loops resizes. */
+  overflow: hidden;
 }
 
 body {
