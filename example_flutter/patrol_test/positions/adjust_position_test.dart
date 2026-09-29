@@ -145,5 +145,36 @@ void main() {
       // The position is still present and adjustable.
       expect(findPositionListItem(), findsOneWidget);
     });
+
+    // NeoTapGuard wraps the Adjust submit button in adjust_position_panel.dart.
+    // Both taps are driven back-to-back with no pump() in between, same
+    // rationale as the order pad's own tap-guard test. Adjusting dispatches
+    // AdjustPositionPlaceOrder, which places a real order alongside the
+    // position update, so the orders list is what proves whether one or two
+    // adjustments actually went through.
+    patrolTest('rapid double-tapping Adjust submits exactly once', ($) async {
+      await openChartWithMockPosition($);
+      await openPositionsPanel($);
+      await waitUntilPresent($, findPositionListItem());
+      await tapPositionAdjustIcon($);
+
+      final submitBtn = find.byKey(Key(ChartTestKeys.adjustPositionSubmitBtn));
+      await $.tester.tap(submitBtn);
+      await $.tester.tap(submitBtn, warnIfMissed: false);
+      await $.pumpAndSettle();
+
+      expect(find.text('Current Position'), findsNothing);
+
+      await closePositionsPanel($);
+      await openOrdersPanel($);
+      await waitUntilPresent(
+        $,
+        findAnyOrderModifyBtn(),
+        timeout: const Duration(seconds: 20),
+      );
+
+      expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+    });
   });
 }

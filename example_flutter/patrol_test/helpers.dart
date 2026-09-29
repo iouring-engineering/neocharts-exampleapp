@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
+import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
@@ -49,9 +50,15 @@ Future<void> openChartAndAwaitLoad(
   );
   await completer.future;
   await $.tester.pump(const Duration(milliseconds: 300));
-  await $.tester.ensureVisible(find.text('NeoCharts'));
+  // find.text('NeoCharts') alone is ambiguous -- the home page's own
+  // header logo repeats the same "NeoCharts" text right above this card.
+  final chartCard = find.descendant(
+    of: find.byType(ChartCard),
+    matching: find.text('NeoCharts'),
+  );
+  await $.tester.ensureVisible(chartCard);
   await $.tester.pumpAndSettle();
-  await $('NeoCharts').tap();
+  await $.tester.tap(chartCard);
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,

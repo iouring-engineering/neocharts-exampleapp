@@ -115,5 +115,41 @@ void main() {
         expect(find.text('Add Position'), findsNothing);
       },
     );
+
+    // NeoTapGuard wraps all three execute buttons in add_position_panel.dart
+    // (the same _buidActionButton helper). Both taps are driven back-to-back
+    // with no pump() in between -- the panel pops on a successful execute,
+    // so pumping between taps would let the first tap's pop already start
+    // removing the button before the second tap lands. Adding places a real
+    // order alongside the position update, so the orders list is what
+    // proves whether one or two executions actually went through.
+    patrolTest('rapid double-tapping "Execute at Market" adds exactly once', (
+      $,
+    ) async {
+      await openChartWithMockPosition($);
+      await openPositionsPanel($);
+      await waitUntilPresent($, findPositionListItem());
+      await tapPositionAddIcon($);
+
+      final executeBtn = find.byKey(
+        Key(ChartTestKeys.addPositionExecuteMarketBtn),
+      );
+      await $.tester.tap(executeBtn);
+      await $.tester.tap(executeBtn, warnIfMissed: false);
+      await $.pumpAndSettle();
+
+      expect(find.text('Add Position'), findsNothing);
+
+      await closePositionsPanel($);
+      await openOrdersPanel($);
+      await waitUntilPresent(
+        $,
+        findAnyOrderModifyBtn(),
+        timeout: const Duration(seconds: 20),
+      );
+
+      expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+    });
   });
 }
