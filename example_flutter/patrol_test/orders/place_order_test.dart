@@ -145,4 +145,63 @@ void main() {
       expect(find.text('NIFTY 50'), findsWidgets);
     });
   });
+
+  group('Orders — order pad tap guard', () {
+    // NeoTapGuard wraps BUY/SELL in order_pad_dialog.dart. Both taps below
+    // are driven back-to-back with no pump() in between -- tapping, then
+    // pumping, then tapping again would let the first tap's own
+    // Navigator.pop() (order_pad_dialog.dart's _handleOrderPlacement)
+    // already start removing the button from the tree before the second
+    // tap lands, which wouldn't exercise the guard at all. A single
+    // pumpAndSettle() follows both taps, mirroring how two fast real-world
+    // taps actually reach the framework before either one's visual effect
+    // has rendered.
+    patrolTest('rapid double-tapping BUY places exactly one order', ($) async {
+      await openChartWithMock($);
+      await openOrderPad($);
+      await tapOrderTypeChip($, OrderType.market);
+
+      final buyBtn = find.byKey(Key(ChartTestKeys.orderPadBuyBtn));
+      await $.tester.tap(buyBtn);
+      await $.tester.tap(buyBtn, warnIfMissed: false);
+      await $.pumpAndSettle();
+
+      expect($(Key(ChartTestKeys.orderPadBuyBtn)), findsNothing);
+
+      await openOrdersPanel($);
+      await waitUntilPresent(
+        $,
+        findAnyOrderModifyBtn(),
+        timeout: const Duration(seconds: 20),
+      );
+
+      expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+      expect($(Key(ChartTestKeys.errorState)), findsNothing);
+    });
+
+    patrolTest('rapid double-tapping SELL places exactly one order', ($) async {
+      await openChartWithMock($);
+      await openOrderPad($);
+      await tapOrderTypeChip($, OrderType.market);
+
+      final sellBtn = find.byKey(Key(ChartTestKeys.orderPadSellBtn));
+      await $.tester.tap(sellBtn);
+      await $.tester.tap(sellBtn, warnIfMissed: false);
+      await $.pumpAndSettle();
+
+      expect($(Key(ChartTestKeys.orderPadSellBtn)), findsNothing);
+
+      await openOrdersPanel($);
+      await waitUntilPresent(
+        $,
+        findAnyOrderModifyBtn(),
+        timeout: const Duration(seconds: 20),
+      );
+
+      expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+      expect($(Key(ChartTestKeys.errorState)), findsNothing);
+    });
+  });
 }

@@ -64,5 +64,39 @@ void main() {
 
       expect(find.byKey(Key(ChartTestKeys.groupAdjustSubmitBtn)), findsNothing);
     });
+
+    // NeoTapGuard wraps the Adjust Position button in group_adjust_screen.dart.
+    // Both taps are driven back-to-back with no pump() in between, same
+    // rationale as the order pad's own tap-guard test -- submitting pops
+    // the option chain dialog, so pumping between taps would let the first
+    // tap's pop already start removing the button before the second tap
+    // lands. The submission places a real order per adjust-to item, so the
+    // orders list is what proves whether one or two submissions actually
+    // went through.
+    patrolTest('rapid double-tapping Adjust Position submits exactly once', (
+      $,
+    ) async {
+      await openChartWithMockPosition($);
+      await openGroupAdjustOptionChain($);
+      await tapFirstOptionChainStrikeCell($);
+
+      final submitBtn = find.byKey(Key(ChartTestKeys.groupAdjustSubmitBtn));
+      await $.tester.tap(submitBtn);
+      await $.tester.tap(submitBtn, warnIfMissed: false);
+      await $.pumpAndSettle();
+
+      expect(find.byKey(Key(ChartTestKeys.groupAdjustSubmitBtn)), findsNothing);
+
+      await closePositionsPanel($);
+      await openOrdersPanel($);
+      await waitUntilPresent(
+        $,
+        findAnyOrderModifyBtn(),
+        timeout: const Duration(seconds: 20),
+      );
+
+      expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+    });
   });
 }

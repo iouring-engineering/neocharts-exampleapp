@@ -95,5 +95,38 @@ void main() {
       expect(findAnyOrderCancelBtn(), findsNothing);
       expect($(Key(ChartTestKeys.errorState)), findsNothing);
     });
+
+    // NeoTapGuard wraps the confirm button in cancel_order_dialog.dart,
+    // whose _exicuteCancelOrder also calls Navigator.pop() -- if the guard
+    // let a second tap through, that would pop a second time and dismiss
+    // whatever's underneath the dialog too (the orders panel itself),
+    // not just cancel the order twice over. Both taps are driven
+    // back-to-back with no pump() in between so the second one lands
+    // before the first tap's pop has removed the button from the tree.
+    patrolTest(
+      'rapid double-tapping the cancel confirm button cancels exactly once',
+      ($) async {
+        await openChartWithMock($);
+        await placeMarketOrder($, isBuy: true);
+        await openCancelDialogForFirstOrder($);
+
+        final confirmBtn = find.byKey(Key(ChartTestKeys.cancelOrderConfirmBtn));
+        await $.tester.tap(confirmBtn);
+        await $.tester.tap(confirmBtn, warnIfMissed: false);
+        await $.pumpAndSettle();
+
+        await waitUntilAbsent(
+          $,
+          findAnyOrderCancelBtn(),
+          timeout: const Duration(seconds: 15),
+        );
+
+        expect(findAnyOrderCancelBtn(), findsNothing);
+        expect($(Key(ChartTestKeys.errorState)), findsNothing);
+        // A double pop would have dismissed the orders panel itself too --
+        // the drawer's own hamburger toggle must still be reachable.
+        expect(find.byKey(Key(ChartTestKeys.hamburgerBtn)), findsOneWidget);
+      },
+    );
   });
 }

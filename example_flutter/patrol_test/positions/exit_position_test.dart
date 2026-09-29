@@ -147,5 +147,41 @@ void main() {
       );
       expect(findAnyOrderCancelBtn(), findsWidgets);
     });
+
+    // NeoTapGuard wraps all three execute buttons in exit_position_body.dart
+    // (the same _buidActionButton helper, via _onExitTap). Both taps are
+    // driven back-to-back with no pump() in between, same rationale as the
+    // order pad's own tap-guard test -- the panel pops on a successful
+    // exit, so pumping between taps would let the first tap's pop already
+    // start removing the button before the second tap lands.
+    patrolTest(
+      'rapid double-tapping "Exit at Market" places exactly one exit order',
+      ($) async {
+        await openChartWithMockPosition($, netQty: 100);
+        await openPositionsPanel($);
+        await waitUntilPresent($, findPositionListItem());
+        await tapPositionExitIcon($);
+
+        final executeBtn = find.byKey(
+          Key(ChartTestKeys.exitPositionExecuteMarketBtn),
+        );
+        await $.tester.tap(executeBtn);
+        await $.tester.tap(executeBtn, warnIfMissed: false);
+        await $.pumpAndSettle();
+
+        expect(find.text('Exit Position'), findsNothing);
+
+        await closePositionsPanel($);
+        await openOrdersPanel($);
+        await waitUntilPresent(
+          $,
+          findAnyOrderCancelBtn(),
+          timeout: const Duration(seconds: 20),
+        );
+
+        expect(findAnyOrderCancelBtn(), findsNWidgets(1));
+        expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      },
+    );
   });
 }

@@ -195,5 +195,28 @@ void main() {
         expect($(Key(ChartTestKeys.errorState)), findsNothing);
       },
     );
+
+    // NeoTapGuard wraps MODIFY in modify_order_pad.dart's _buildModifyCTA.
+    // Both taps are driven back-to-back with no pump() in between, same
+    // rationale as the order pad's own tap-guard test -- letting a frame
+    // settle between them would let the first tap's pop already start
+    // removing the button before the second tap lands.
+    patrolTest(
+      'rapid double-tapping MODIFY submits exactly once and leaves one order',
+      ($) async {
+        await openChartWithMock($);
+        await placeMarketOrder($, isBuy: true);
+        await openModifyPadForFirstOrder($);
+
+        final submitBtn = find.byKey(Key(ChartTestKeys.modifyOrderSubmitBtn));
+        await $.tester.tap(submitBtn);
+        await $.tester.tap(submitBtn, warnIfMissed: false);
+        await $.pumpAndSettle();
+
+        expect(find.text('MODIFY'), findsNothing);
+        expect($(Key(ChartTestKeys.errorState)), findsNothing);
+        expect(findAnyOrderModifyBtn(), findsNWidgets(1));
+      },
+    );
   });
 }
