@@ -458,5 +458,37 @@ function tickFor(symbolId: string): Record<string, unknown> {
     chng: Math.round((ltp - base) * 100) / 100,
     chngPer: Math.round(((ltp - base) / base) * 10000) / 100,
     ltt: Date.now(),
+    ...optionOiFields(symbolId),
+  }
+}
+
+// Open interest / volume for an option tick, so the option chain's OI
+// columns, OI bars and support/resistance markers have something to show.
+// Base OI comes from the fixture's per-strike table (strikes outside it
+// fall back to a bell shape around the ATM), with a little jitter per tick.
+// Every third strike is given a negative OI change so both colours appear.
+// Non-option symbols get no extra fields.
+function optionOiFields(symbolId: string): Record<string, unknown> {
+  const option = data().optionChain.find((o) => o.id === symbolId)
+  if (!option?.strike || !option.optType) return {}
+
+  const strike = Number(option.strike)
+  const side = option.optType === 'CE' ? 'calls' : 'puts'
+  const { byStrike, changeByStrike } = data().oi
+  const atm = data().basePrices[data().niftySymbol.id] ?? 22600
+  const fallback = Math.round(
+    120_000 * Math.exp(-(((strike - atm) / 400) ** 2)) + 20_000,
+  )
+  const baseOi = byStrike[side][option.strike] ?? fallback
+  const oi = Math.round(baseOi * (1 + (Math.random() - 0.5) * 0.01))
+  const magnitude = changeByStrike[side][option.strike] ?? Math.round(baseOi * 0.03)
+  const oiChng = (strike / 50) % 3 === 0 ? -magnitude : magnitude
+  const prevOi = oi - oiChng
+
+  return {
+    OI: oi,
+    oiChng,
+    oiChngPer: prevOi > 0 ? Math.round((oiChng / prevOi) * 10000) / 100 : 0,
+    vol: Math.round(baseOi * 0.4 * (1 + Math.random() * 0.05)),
   }
 }
