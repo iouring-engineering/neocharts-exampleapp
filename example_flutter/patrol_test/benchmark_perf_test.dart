@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
+import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -33,15 +34,23 @@ Future<void> _pumpHomeAndAwaitReady(PatrolIntegrationTester $) async {
   );
   await completer.future;
   await $.tester.pump(const Duration(milliseconds: 300));
-  await $.tester.ensureVisible(find.text('NeoCharts'));
+  // find.text('NeoCharts') alone is ambiguous -- the home page's own
+  // header logo repeats the same "NeoCharts" text right above this card
+  // (see helpers.dart's openChartAndAwaitLoad for the identical fix).
+  await $.tester.ensureVisible(_neoChartsCard);
   await $.tester.pumpAndSettle();
 }
+
+Finder get _neoChartsCard => find.descendant(
+  of: find.byType(ChartCard),
+  matching: find.text('NeoCharts'),
+);
 
 // Taps "NeoCharts" and waits for the chart to finish its initial load --
 // the benchmark-panel equivalent of helpers.dart's openChartAndAwaitLoad,
 // split out so configureBenchmark can run in between.
 Future<void> _openChartFromHome(PatrolIntegrationTester $) async {
-  await $('NeoCharts').tap();
+  await $.tester.tap(_neoChartsCard);
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,
@@ -395,5 +404,306 @@ void main() {
       // Debug overlay must survive all data reloads.
       expect(find.byKey(Key(ChartTestKeys.debugVisibleRange)), findsOneWidget);
     });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Group 7: Option chain overlay
+  //
+  // The option chain renders one row per strike (55 strikes in the mock
+  // data source) on top of the chart, so opening it and scrolling through
+  // it are both real opportunities for dropped frames on the chart
+  // underneath. All sub-tests use a 1K dataset -- light enough that any
+  // budget miss here is attributable to the overlay, not candle count.
+  //
+  // Live data is enabled so the strike rows are actively being updated
+  // by streamed ticks while the list is scrolled -- scrolling a static
+  // list would miss the real-world case of jank caused by simultaneous
+  // row rebuilds and list transform.
+  // ─────────────────────────────────────────────────────────────
+  group('Perf — option chain', () {
+    patrolTest('opening the option chain stays within 60 fps budget', (
+      $,
+    ) async {
+      await _pumpHomeAndAwaitReady($);
+      await configureBenchmark($, datasetSize: DatasetSize.s1k, liveData: true);
+      await _openChartFromHome($);
+      await awaitPerfOverlay($);
+
+      await openOptionChain($);
+      await waitUntilPresent(
+        $,
+        findByKeyPrefix('chart_option_chain_strike_cell_'),
+      );
+      await awaitPerfOverlay($);
+
+      // Let stream ticks fire so the strike rows are populated and
+      // actively updating before sampling.
+      await $.tester.pump(const Duration(seconds: 3));
+
+      final run = await sampleMetrics($, tag: 'option_chain_open');
+      logRun(run);
+      assertFrameBudgetP95(run, 16667);
+
+      expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+      await closeOptionChain($);
+    });
+
+    patrolTest(
+      'scrolling the option chain strike list while streaming stays within 60 fps budget',
+      ($) async {
+        await _pumpHomeAndAwaitReady($);
+        await configureBenchmark(
+          $,
+          datasetSize: DatasetSize.s1k,
+          liveData: true,
+        );
+        await _openChartFromHome($);
+        await awaitPerfOverlay($);
+
+        await openOptionChain($);
+        await waitUntilPresent(
+          $,
+          findByKeyPrefix('chart_option_chain_strike_cell_'),
+        );
+        await awaitPerfOverlay($);
+
+        // Let stream ticks fire so the strike rows are actively updating
+        // (LTP/Chg/OI) while the list is scrolled below.
+        await $.tester.pump(const Duration(seconds: 3));
+
+        // Raw screen-coordinate drag, not a specific strike cell's finder --
+        // the list isn't virtualized, so every cell stays mounted (just
+        // scrolled off-screen), and dragging a finder that's no longer
+        // on-screen is unreliable. Mirrors Group 5's chartGestureSurface
+        // pan, which drags by screen offset for the same reason.
+        final view = $.tester.view;
+        final screenSize = view.physicalSize / view.devicePixelRatio;
+        final dragStart = Offset(screenSize.width / 2, screenSize.height / 2);
+
+        for (var i = 0; i < 10; i++) {
+          await $.tester.dragFrom(dragStart, const Offset(0, -200));
+          await $.tester.pump(const Duration(milliseconds: 16));
+        }
+        final run = await sampleMetrics(
+          $,
+          tag: 'option_chain_scroll',
+          count: 10,
+        );
+        logRun(run);
+        assertFrameBudgetP95(run, 16667);
+
+        expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+        await closeOptionChain($);
+      },
+    );
+
+    patrolTest(
+      'switching the option chain expiry while streaming stays within 60 fps budget',
+      ($) async {
+        await _pumpHomeAndAwaitReady($);
+        await configureBenchmark(
+          $,
+          datasetSize: DatasetSize.s1k,
+          liveData: true,
+        );
+        await _openChartFromHome($);
+        await awaitPerfOverlay($);
+
+        await openOptionChain($);
+        await waitUntilPresent(
+          $,
+          findByKeyPrefix('chart_option_chain_strike_cell_'),
+        );
+        await awaitPerfOverlay($);
+        await $.tester.pump(const Duration(seconds: 3));
+
+        await $.tester.tap(
+          find.byKey(Key(ChartTestKeys.optionChainExpiryDropdown)),
+        );
+        await $.pumpAndSettle();
+
+        final expiryOption = findByKeyPrefix(
+          'chart_option_chain_expiry_option_',
+        );
+        await waitUntilPresent($, expiryOption);
+        await $.tester.tap(expiryOption.first);
+        await $.tester.pump();
+
+        final run = await sampleMetrics($, tag: 'option_chain_expiry_switch');
+        logRun(run);
+        assertFrameBudgetP95(run, 16667);
+
+        expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+        await closeOptionChain($);
+      },
+    );
+
+    patrolTest('toggling CALL/PUT while streaming stays within 60 fps budget', (
+      $,
+    ) async {
+      await _pumpHomeAndAwaitReady($);
+      await configureBenchmark($, datasetSize: DatasetSize.s1k, liveData: true);
+      await _openChartFromHome($);
+      await awaitPerfOverlay($);
+
+      await openOptionChain($);
+      await waitUntilPresent(
+        $,
+        findByKeyPrefix('chart_option_chain_strike_cell_'),
+      );
+      await awaitPerfOverlay($);
+      await $.tester.pump(const Duration(seconds: 3));
+
+      await $.tester.tap(
+        find.byKey(Key(ChartTestKeys.optionChainTypeTab('PE'))),
+      );
+      await $.tester.pump();
+
+      final run = await sampleMetrics($, tag: 'option_chain_call_put_toggle');
+      logRun(run);
+      assertFrameBudgetP95(run, 16667);
+
+      expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+      await closeOptionChain($);
+    });
+
+    patrolTest('toggling Greeks while streaming stays within 60 fps budget', (
+      $,
+    ) async {
+      await _pumpHomeAndAwaitReady($);
+      await configureBenchmark($, datasetSize: DatasetSize.s1k, liveData: true);
+      await _openChartFromHome($);
+      await awaitPerfOverlay($);
+
+      await openOptionChain($);
+      await waitUntilPresent(
+        $,
+        findByKeyPrefix('chart_option_chain_strike_cell_'),
+      );
+      await awaitPerfOverlay($);
+      await $.tester.pump(const Duration(seconds: 3));
+
+      await $.tester.tap(find.byKey(Key(ChartTestKeys.optionChainGreekSwitch)));
+      await $.tester.pump();
+
+      final run = await sampleMetrics($, tag: 'option_chain_greeks_toggle');
+      logRun(run);
+      assertFrameBudgetP95(run, 16667);
+
+      expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+      await closeOptionChain($);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Group 8: Indicator browser list
+  //
+  // Distinct from Group 3 (indicator stacking), which measures the
+  // chart's own rendering cost once indicators are active. This group
+  // measures the browser *picker* UI itself -- opening the list, typing
+  // into its search field, and scrolling it -- all while the chart
+  // underneath is still live. All sub-tests use a 1K dataset.
+  // ─────────────────────────────────────────────────────────────
+  group('Perf — indicator browser', () {
+    patrolTest('opening the indicator browser stays within 60 fps budget', (
+      $,
+    ) async {
+      await _pumpHomeAndAwaitReady($);
+      await configureBenchmark($, datasetSize: DatasetSize.s1k);
+      await _openChartFromHome($);
+      await awaitPerfOverlay($);
+
+      await openIndicatorMenu($);
+      await waitUntilPresent(
+        $,
+        find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+      );
+      await awaitPerfOverlay($);
+
+      final run = await sampleMetrics($, tag: 'indicator_browser_open');
+      logRun(run);
+      assertFrameBudgetP95(run, 16667);
+
+      expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+      await closeMenu($);
+    });
+
+    patrolTest(
+      'typing in the indicator search field stays within 60 fps budget',
+      ($) async {
+        await _pumpHomeAndAwaitReady($);
+        await configureBenchmark($, datasetSize: DatasetSize.s1k);
+        await _openChartFromHome($);
+        await awaitPerfOverlay($);
+
+        await openIndicatorMenu($);
+        await waitUntilPresent(
+          $,
+          find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+        );
+        await awaitPerfOverlay($);
+
+        await $.tester.enterText(
+          find.byKey(Key(ChartTestKeys.indicatorSearchField)),
+          'm',
+        );
+        await $.tester.pump();
+
+        final run = await sampleMetrics($, tag: 'indicator_browser_search');
+        logRun(run);
+        assertFrameBudgetP95(run, 16667);
+
+        expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+        await closeMenu($);
+      },
+    );
+
+    patrolTest(
+      'scrolling the indicator browser list stays within 60 fps budget',
+      ($) async {
+        await _pumpHomeAndAwaitReady($);
+        await configureBenchmark($, datasetSize: DatasetSize.s1k);
+        await _openChartFromHome($);
+        await awaitPerfOverlay($);
+
+        await openIndicatorMenu($);
+        await waitUntilPresent(
+          $,
+          find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+        );
+        await awaitPerfOverlay($);
+
+        // x = 70% of screen width -- the menu's own rail (the Intervals/
+        // Indicators/Chart Types tabs) occupies a fixed ~88px strip on the
+        // left, so this reliably lands in the list content area beside it
+        // regardless of device width.
+        final view = $.tester.view;
+        final screenSize = view.physicalSize / view.devicePixelRatio;
+        final dragStart = Offset(screenSize.width * 0.7, screenSize.height / 2);
+
+        for (var i = 0; i < 5; i++) {
+          await $.tester.dragFrom(dragStart, const Offset(0, -200));
+          await $.tester.pump(const Duration(milliseconds: 16));
+        }
+        final run = await sampleMetrics(
+          $,
+          tag: 'indicator_browser_scroll',
+          count: 10,
+        );
+        logRun(run);
+        assertFrameBudgetP95(run, 16667);
+
+        expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+
+        await closeMenu($);
+      },
+    );
   });
 }

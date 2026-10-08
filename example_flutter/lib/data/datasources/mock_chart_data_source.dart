@@ -18,6 +18,7 @@ class MockChartDataSource {
       ...optionChain,
       ...generateFutureSymbols(),
       ...generateIndexSymbols(),
+      ...generateEquitySymbols(),
     ];
   }
   double _niftyLivePrice = 22600.0;
@@ -65,6 +66,26 @@ class MockChartDataSource {
     23600,
     23650,
     23700,
+    23750,
+    23800,
+    23850,
+    23900,
+    23950,
+    24000,
+    24050,
+    24100,
+    24150,
+    24200,
+    24250,
+    24300,
+    24350,
+    24400,
+    24450,
+    24500,
+    24550,
+    24600,
+    24650,
+    24700,
   ];
 
   final Random _random = Random();
@@ -149,6 +170,51 @@ class MockChartDataSource {
         'exchange': 'NSE',
       },
     ];
+  }
+
+  /// Synthetic equity symbols that exist only to give the symbol-search
+  /// panel a large, realistic universe to filter/scroll through. These
+  /// never appear in [generateTicks] -- they're search-only fixtures, not
+  /// tradable symbols.
+  static const List<String> _equityNames = [
+    'Reliance Industries',
+    'Tata Consultancy Services',
+    'HDFC Bank',
+    'ICICI Bank',
+    'Infosys',
+    'Hindustan Unilever',
+    'ITC',
+    'State Bank of India',
+    'Bharti Airtel',
+    'Kotak Mahindra Bank',
+    'Larsen & Toubro',
+    'Axis Bank',
+    'Bajaj Finance',
+    'Maruti Suzuki',
+    'Asian Paints',
+    'HCL Technologies',
+    'Titan Company',
+    'Sun Pharmaceutical',
+    'UltraTech Cement',
+    'Wipro',
+  ];
+
+  List<Map<String, dynamic>> generateEquitySymbols({int count = 200}) {
+    return List.generate(count, (i) {
+      final base = _equityNames[i % _equityNames.length];
+      final suffix = i ~/ _equityNames.length;
+      final name = suffix == 0 ? base : '$base ${suffix + 1}';
+      final id = 'EQ${(i + 1).toString().padLeft(4, '0')}';
+
+      return {
+        'id': id,
+        'name': name,
+        'lotSize': 1,
+        'precision': precision,
+        'tickSize': tickSize,
+        'exchange': 'NSE',
+      };
+    });
   }
 
   bool isFutureSymbol(String symbolId) {
@@ -889,18 +955,24 @@ class MockChartDataSource {
 
         'ltt': now,
 
+        'oiChng': _random3(),
         'oiChngPer': (_random.nextDouble() - 0.5) * 2,
 
         'OI': _random3(),
 
-        'vWap': option['vWap'] ?? optionPrice,
+        'vwap': option['vwap'] ?? optionPrice,
 
         'vol': _random3(),
 
+        'itm': _random.nextBool().toString(),
+        'iv': _random3(),
         'delta': _random3(),
         'gamma': _random3(),
         'theta': _random3(),
+        'rho': _random3(),
         'vega': _random3(),
+        'highIV': _random3(),
+        'lowIV': _random3(),
       });
     }
 
