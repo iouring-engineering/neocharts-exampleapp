@@ -43,5 +43,3 @@ patrol_test/debug_test_bundle.dart
 android/key.properties
 android/upload-keystore.jks
 
-# NeoCharts license token
-.neocharts_token
