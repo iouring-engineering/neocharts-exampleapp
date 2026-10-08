@@ -1,0 +1,4 @@
+{
+  "payload": "{\"clientId\":\"iouring-example\",\"status\":\"active\",\"issuedAt\":1791455700,\"android\":\"com.iouring.neocharts.example\",\"ios\":\"com.iouring.neocharts.example\",\"web\":[\"localhost\",\"127.0.0.1\"],\"features\":[\"layout.scalper\",\"trading.orders\",\"trading.oco\",\"trading.positions\",\"trading.alerts\",\"analytics.optionChain\",\"analytics.oi\",\"analytics.derivatives\",\"charts.advanced\",\"indicators.advanced\",\"drawings.advanced\"]}",
+  "signature": "ZZjclsKIMk99SaXbD8dOaruOVnOw5A0/60exkTHp1YzOI1d5u+hBYuQoo748LQzT+jxRtBhvGz4y+Bh5OGvmCw=="
+}
