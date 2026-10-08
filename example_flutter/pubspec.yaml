@@ -117,4 +117,3 @@ hooks:
     nxtchart_native_core:
       base_url: http://localhost:8743
       client_id: iouring-example
-      token_file: .neocharts_token
