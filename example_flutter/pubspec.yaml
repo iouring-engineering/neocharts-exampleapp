@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.6+6
+version: 1.0.7+7
 
 environment:
   sdk: ^3.13.0
@@ -45,7 +45,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -58,7 +58,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   patrol: ^4.9.0
-  patrol_mcp: 0.2.0
+  patrol_mcp: ^0.2.1
   patrol_cli: ^4.7.0
 
 # For information on the generic Dart part of this file, see the
@@ -66,6 +66,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  config:
+    enable-swift-package-manager: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
