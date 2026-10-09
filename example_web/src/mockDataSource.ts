@@ -462,6 +462,96 @@ function tickFor(symbolId: string): Record<string, unknown> {
   }
 }
 
+// -------------------------------------------------------------------------
+// Market depth (order book) -- 5 bid/ask levels plus day statistics
+// -------------------------------------------------------------------------
+
+interface DayStats {
+  open: number
+  high: number
+  low: number
+  volume: number
+  turnover: number
+}
+
+// Day high/low/volume only ever widen/accumulate, so they live across
+// snapshots (unlike the book itself, which is regenerated each time).
+const dayStats = new Map<string, DayStats>()
+
+const DEPTH_LEVELS = 5
+
+function tickSizeFor(symbolId: string): number {
+  const f = data()
+  const all = [...f.indexSymbols, ...f.optionChain, ...f.futureSymbols, ...f.equitySymbols]
+  return all.find((s) => s.id === symbolId)?.tickSize || 0.05
+}
+
+function roundToTick(value: number, tick: number): number {
+  return Math.round(Math.round(value / tick) * tick * 1e4) / 1e4
+}
+
+function depthSide(
+  start: number,
+  tick: number,
+  direction: 1 | -1,
+): { price: number; qty: number; orders: number }[] {
+  const levels = []
+  for (let i = 0; i < DEPTH_LEVELS; i++) {
+    // Resting size thins out away from the touch, like a real book.
+    const qty = Math.round((1300 - i * 250) * (0.6 + Math.random() * 0.8))
+    levels.push({
+      price: roundToTick(start + direction * i * tick, tick),
+      qty,
+      orders: Math.max(1, Math.round(qty / 180 + Math.random() * 2)),
+    })
+  }
+  return levels
+}
+
+/** Order-book fields for one symbol, merged onto its `marketDataStreamer`
+ * tick. Each call is an independent full snapshot (no deltas); `symbolId`,
+ * `vol` and `ltt` are left to the tick itself. */
+export function depthFor(symbolId: string): Record<string, unknown> {
+  const base = data().basePrices[symbolId] ?? 22600
+  const tick = tickSizeFor(symbolId)
+  const ltp = roundToTick(
+    Math.max(tick, priceAt(symbolId, Date.now()) + (Math.random() - 0.5) * base * 0.0006),
+    tick,
+  )
+
+  let stats = dayStats.get(symbolId)
+  if (!stats) {
+    const open = roundToTick(base * (1 + (seededUnit(`${symbolId}:open`) - 0.5) * 0.01), tick)
+    stats = { open, high: open, low: open, volume: 1_000_000 * (1 + seededUnit(`${symbolId}:vol`)), turnover: 0 }
+    stats.turnover = stats.volume * open
+    dayStats.set(symbolId, stats)
+  }
+  stats.high = Math.max(stats.high, ltp)
+  stats.low = Math.min(stats.low, ltp)
+  const ltq = 1 + Math.floor(Math.random() * 100)
+  stats.volume += ltq
+  stats.turnover += ltq * ltp
+
+  const bids = depthSide(ltp - tick, tick, -1)
+  const asks = depthSide(ltp + tick, tick, 1)
+  // Totals cover the whole book, not just the five visible levels.
+  const bookTotal = (levels: { qty: number }[]) =>
+    Math.round(levels.reduce((sum, l) => sum + l.qty, 0) * (1.4 + Math.random() * 0.4))
+
+  return {
+    bids,
+    asks,
+    totalBuyQty: bookTotal(bids),
+    totalSellQty: bookTotal(asks),
+    open: stats.open,
+    high: stats.high,
+    low: stats.low,
+    prevClose: base,
+    avgTradePrice: roundToTick(stats.turnover / stats.volume, tick),
+    ltq,
+  }
+}
+
 // Open interest / volume for an option tick, so the option chain's OI
 // columns, OI bars and support/resistance markers have something to show.
 // Base OI comes from the fixture's per-strike table (strikes outside it
