@@ -508,8 +508,9 @@ function depthSide(
   return levels
 }
 
-/** Full order-book snapshot for one symbol. Each call is an independent
- * snapshot, matching the `marketDepthStreamer` contract (no deltas). */
+/** Order-book fields for one symbol, merged onto its `marketDataStreamer`
+ * tick. Each call is an independent full snapshot (no deltas); `symbolId`,
+ * `vol` and `ltt` are left to the tick itself. */
 export function depthFor(symbolId: string): Record<string, unknown> {
   const base = data().basePrices[symbolId] ?? 22600
   const tick = tickSizeFor(symbolId)
@@ -538,7 +539,6 @@ export function depthFor(symbolId: string): Record<string, unknown> {
     Math.round(levels.reduce((sum, l) => sum + l.qty, 0) * (1.4 + Math.random() * 0.4))
 
   return {
-    symbolId,
     bids,
     asks,
     totalBuyQty: bookTotal(bids),
@@ -547,10 +547,8 @@ export function depthFor(symbolId: string): Record<string, unknown> {
     high: stats.high,
     low: stats.low,
     prevClose: base,
-    vol: Math.round(stats.volume),
     avgTradePrice: roundToTick(stats.turnover / stats.volume, tick),
     ltq,
-    ltt: Date.now(),
   }
 }
 
