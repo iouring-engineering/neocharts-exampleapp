@@ -8,6 +8,7 @@ import {
   atmSymbolsJson,
   chartTopOptionsForJson,
   chartTopOptionsJson,
+  depthFor,
   fetchAtmIvIntradayForJson,
   fetchAtmIvIntradayJson,
   fetchAtmStraddleIntradayForJson,
@@ -103,6 +104,8 @@ export interface NxtChartHost {
 
   subscribeMarketData(symbols: string): void
   unsubscribeMarketData(): void
+  subscribeMarketDepth(symbolId: string): void
+  unsubscribeMarketDepth(): void
 }
 
 declare global {
@@ -119,6 +122,7 @@ let orderCounter = 0
 let ocoGroupCounter = 0
 let alertCounter = 0
 const subscribedSymbols = new Set<string>()
+let depthSymbol: string | null = null
 let orders: Record<string, unknown>[] = []
 let positions: Record<string, unknown>[] = []
 let ocoOrders: Record<string, unknown>[] = []
@@ -264,6 +268,16 @@ export const nxtChartHost: NxtChartHost = {
   unsubscribeMarketData() {
     subscribedSymbols.clear()
   },
+
+  // Depth is one symbol at a time (the open order pad's). Push a snapshot
+  // right away so the panel doesn't wait up to a tick interval to render.
+  subscribeMarketDepth(symbolId) {
+    depthSymbol = symbolId
+    dispatch('nxtchart:marketDepth', depthFor(symbolId))
+  },
+  unsubscribeMarketDepth() {
+    depthSymbol = null
+  },
 }
 
 /** Resolves once the fixture is loaded -- callers must await this before
@@ -290,6 +304,10 @@ async function startMockFeeds(): Promise<void> {
     const ticks = nextTicks().filter((t) => subscribedSymbols.has(t.symbolId as string))
     if (ticks.length > 0) dispatch('nxtchart:marketData', ticks)
   }, 1000)
+
+  setInterval(() => {
+    if (depthSymbol) dispatch('nxtchart:marketDepth', depthFor(depthSymbol))
+  }, 500)
 
   setInterval(() => {
     dispatch('nxtchart:orders', orders)

@@ -256,6 +256,10 @@ class NxtChartRepository implements ChartInterface {
     return _marketDataController.stream;
   }
 
+  // Market depth is web-only for now.
+  @override
+  Stream<String> marketDepthStreamer(String symbolId) => const Stream.empty();
+
   @override
   Stream<String> searchSymbolsStreamer(String query) {
     final keyword = query.trim().toLowerCase();
