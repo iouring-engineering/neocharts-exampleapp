@@ -97,7 +97,48 @@ export async function loadMockData(): Promise<void> {
   for (const key of REQUIRED_KEYS) {
     if (!(key in json)) throw new Error(`mock fixture is missing required key: ${key}`)
   }
+  addWebOnlyBankex(json)
   fixture = json
+}
+
+// BANKEX (BSE bank index) with its option chain and future. The fixture is
+// shared with the Android/iOS example apps, so it's layered on here instead
+// of added to apps/mock/symbols.json -- only the web demo carries it.
+// Built from the fixture's SENSEX entries (same exchange and expiry),
+// re-based onto BANKEX's own level.
+function addWebOnlyBankex(json: Fixture): void {
+  const INDEX_ID = 'BANKEX'
+  const TEMPLATE_ID = 'SENSEX'
+  const indexLevel = 60000
+  const scale = indexLevel / (json.basePrices[TEMPLATE_ID] ?? indexLevel)
+  const rename = (v: string) => v.replace(TEMPLATE_ID, INDEX_ID)
+  const rebase = (v: string, step = 1) =>
+    String(Math.round((Number(v) * scale) / step) * step)
+
+  const template = json.indexSymbols.find((s) => s.id === TEMPLATE_ID)
+  if (!template || json.indexSymbols.some((s) => s.id === INDEX_ID)) return
+  json.indexSymbols.push({ ...template, id: INDEX_ID, name: INDEX_ID })
+  json.basePrices[INDEX_ID] = indexLevel
+
+  const derive = (s: SymbolInfo): SymbolInfo => {
+    const strike = s.strike === undefined ? undefined : rebase(s.strike, 100)
+    return {
+      ...s,
+      id: rename(s.id).replace(s.strike ?? '', strike ?? ''),
+      name: rename(s.name).replace(s.strike ?? '', strike ?? ''),
+      undID: INDEX_ID,
+      ...(strike === undefined ? {} : { strike }),
+    }
+  }
+  const options = json.optionChain.filter((s) => s.undID === TEMPLATE_ID)
+  const futures = json.futureSymbols.filter((s) => s.undID === TEMPLATE_ID)
+  for (const src of [...options, ...futures]) {
+    const dst = derive(src)
+    json.basePrices[dst.id] = src.optType
+      ? json.basePrices[src.id] ?? 0
+      : indexLevel
+    ;(src.optType ? json.optionChain : json.futureSymbols).push(dst)
+  }
 }
 
 function data(): Fixture {
