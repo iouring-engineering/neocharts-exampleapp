@@ -1143,6 +1143,118 @@ class NxtChartRepository implements ChartInterface {
     _emitPositions();
   }
 
+  /// Test-only seeding hook -- replaces whatever positions exist (including
+  /// [_seedDemoPositions]'s own startup demo set) with up to [count]
+  /// distinct option positions, one per option-chain symbol (like
+  /// [_seedDemoPositions] but count-driven). Each position uses a distinct
+  /// `symID`, so unlike looping [seedPosition] (always `NIFTY`) this never
+  /// produces list rows with colliding keys. [count] is clamped to the
+  /// option chain's size (currently 110 -- 55 strikes x CE/PE).
+  void seedPositions(int count) {
+    _positions.clear();
+
+    final optionChain = _dataSource.optionChain;
+
+    final selectedOptions = optionChain.take(count).toList();
+
+    for (var i = 0; i < selectedOptions.length; i++) {
+      final option = selectedOptions[i];
+
+      final symbolId =
+          option['symbolId']?.toString() ??
+          option['symbol']?.toString() ??
+          option['id']?.toString();
+
+      if (symbolId == null || symbolId.isEmpty) {
+        continue;
+      }
+
+      final currentPrice = toDouble(option['ltp']);
+      final netQty = i.isEven ? 50 : -25;
+      final avgPrice = (currentPrice + (i.isEven ? -5 : 5)).clamp(100.0, 300.0);
+      final pnl = netQty > 0
+          ? (currentPrice - avgPrice) * netQty
+          : (avgPrice - currentPrice) * netQty.abs();
+
+      _positions.add({
+        'symID': symbolId,
+        'displayName': option['name']?.toString() ?? symbolId,
+        'netQty': netQty,
+        'avgPrice': avgPrice,
+        'netOrgAvgPrice': avgPrice,
+        'pnl': pnl,
+        'realizedPnl': 0.0,
+        'realizedOrgPnl': 0.0,
+        'unrealizedPL': pnl,
+        'mtm': pnl,
+        'multiplier': 1.0,
+        'priceFactor': 1.0,
+        'productType': i.isEven ? 'normal' : 'intraday',
+        'symbol': option,
+      });
+    }
+
+    _emitPositions();
+  }
+
+  /// Test-only seeding hook -- bulk-adds [count] synthetic open orders so
+  /// Patrol performance tests can exercise the orders list under a large
+  /// dataset without routing through [placeOrder]'s fill/position pipeline
+  /// [count] times.
+  void seedOrders(int count) {
+    final price = _dataSource.lastPrice;
+
+    for (var i = 0; i < count; i++) {
+      _orderCounter++;
+
+      _orders.add({
+        'orderID': 'ORD${_orderCounter.toString().padLeft(3, '0')}',
+        'type': 'limit',
+        'orderAction': i.isEven ? 'buy' : 'sell',
+        'productType': 'normal',
+        'avgPrice': price,
+        'price': price,
+        'netQty': MockChartDataSource.lotSize,
+        'fillQty': 0,
+        'ordTime': formatDateTime(DateTime.now()),
+        'orderStatus': 'open',
+        'triggerPrice': 0,
+        'symbol': _dataSource.symbolForId('NIFTY'),
+      });
+    }
+
+    _emitOrders();
+  }
+
+  /// Test-only seeding hook -- bulk-adds [count] synthetic alerts so Patrol
+  /// performance tests can exercise the alerts list under a large dataset
+  /// without going through the create-alert dialog [count] times. Seeded
+  /// disabled (not just spaced away from the live price) so [_evaluateAlerts]
+  /// skips them outright -- the live NIFTY price randomly walks over a long
+  /// test run, and a wide spread of real trigger prices would eventually get
+  /// crossed anyway, firing a feedback snackbar per trigger. A burst of
+  /// those overlapping (new one shown before the last one's dismiss
+  /// animation finishes) throws Flutter's "OverlayEntry should be removed
+  /// only once" and makes pumpAndSettle hang forever on the open panel.
+  void seedAlerts(int count) {
+    final price = _dataSource.lastPrice;
+
+    for (var i = 0; i < count; i++) {
+      _alertCounter++;
+
+      _alerts.add({
+        'alertId': 'ALERT${_alertCounter.toString().padLeft(3, '0')}',
+        'symbolInfo': _dataSource.symbolForId('NIFTY'),
+        'triggerPrice': (price + i).toStringAsFixed(2),
+        'enabled': false,
+        'triggered': false,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+
+    _emitAlerts();
+  }
+
   double _snapToTick(double raw) {
     const tickSize = MockChartDataSource.tickSize;
 

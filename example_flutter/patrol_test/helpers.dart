@@ -318,6 +318,18 @@ Future<void> openOptionChain(PatrolIntegrationTester $) async {
 // dialog is centred, so a screen corner always lands outside it.
 Future<void> closeOptionChain(PatrolIntegrationTester $) => tapOutsideModal($);
 
+// Opens the symbol search bottom sheet via the app bar's search icon
+// (portrait only -- landscape renders the same panel as an NxtPopup from a
+// different entry point, out of scope here).
+Future<void> openSymbolSearch(PatrolIntegrationTester $) async {
+  await $.tester.tap(find.byKey(Key(ChartTestKeys.symbolSearchBtn)));
+  await $.pumpAndSettle();
+}
+
+// Dismisses the symbol search sheet the same way as the option chain modal
+// -- tapping the barrier above the sheet pops its Navigator route.
+Future<void> closeSymbolSearch(PatrolIntegrationTester $) => tapOutsideModal($);
+
 // Taps the centre of the chart canvas to open the order pad.
 // Retries until the order pad buy button appears (the viewport may need
 // an extra frame to finish layout after the loading state clears). The

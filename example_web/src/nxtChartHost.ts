@@ -8,6 +8,7 @@ import {
   atmSymbolsJson,
   chartTopOptionsForJson,
   chartTopOptionsJson,
+  depthFor,
   fetchAtmIvIntradayForJson,
   fetchAtmIvIntradayJson,
   fetchAtmStraddleIntradayForJson,
@@ -287,7 +288,11 @@ async function startMockFeeds(): Promise<void> {
   ocoGroupCounter = ocoOrders.length
 
   setInterval(() => {
-    const ticks = nextTicks().filter((t) => subscribedSymbols.has(t.symbolId as string))
+    // Order-book fields ride on each subscribed symbol's tick (the web
+    // depth panel reads them from the shared market-data stream).
+    const ticks = nextTicks()
+      .filter((t) => subscribedSymbols.has(t.symbolId as string))
+      .map((t) => ({ ...t, ...depthFor(t.symbolId as string) }))
     if (ticks.length > 0) dispatch('nxtchart:marketData', ticks)
   }, 1000)
 
