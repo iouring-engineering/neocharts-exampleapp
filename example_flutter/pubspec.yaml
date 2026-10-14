@@ -114,8 +114,3 @@ patrol:
     package_name: com.iouring.neocharts.example
   ios:
     bundle_id: com.iouring.neocharts.example
-
-hooks:
-  user_defines:
-    neocharts_core:
-      base_url: http://localhost:8743
