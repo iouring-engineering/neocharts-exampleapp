@@ -42,3 +42,4 @@ patrol_test/debug_test_bundle.dart
 # PlayStore
 android/key.properties
 android/upload-keystore.jks
+
