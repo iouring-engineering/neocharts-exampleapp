@@ -28,6 +28,7 @@ import {
   nextTicks,
   optionSymbolsForJson,
   optionSymbolsJson,
+  placedOrder,
   searchSymbols,
   seedOcoOrders,
   seedOrders,
@@ -177,15 +178,7 @@ export const nxtChartHost: NxtChartHost = {
   placeOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     orderCounter++
-    orders.push({
-      orderID: `ORD${String(orderCounter).padStart(3, '0')}`,
-      symbolID: p.symID,
-      avgPrice: p.price ?? 0,
-      type: p.orderType ?? 'limit',
-      netQty: p.qty ?? 0,
-      fillQty: 0,
-      orderAction: p.orderAction ?? 'buy',
-    })
+    orders.push(placedOrder(`ORD${String(orderCounter).padStart(3, '0')}`, p))
     dispatch('nxtchart:orders', orders)
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Order placed' })
   },
