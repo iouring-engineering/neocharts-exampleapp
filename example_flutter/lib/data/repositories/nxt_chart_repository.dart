@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:neocharts_exampleapp/data/datasources/mock_chart_data_source.dart';
 import 'package:neocharts_exampleapp/data/datasources/stream_rate.dart';
 import 'package:neocharts_exampleapp/utils/formatting.dart';
@@ -1297,4 +1298,24 @@ class NxtChartRepository implements ChartInterface {
   void closeRequested() {
     // TODO: implement closeRequested
   }
+
+  @override
+  // TODO: implement onOpenAlerts
+  VoidCallback? get onOpenAlerts => throw UnimplementedError();
+
+  @override
+  // TODO: implement onOpenOptionChain
+  void Function(
+    String underlyingSymbolJson,
+    ValueChanged<String> onSymbolSelected,
+  )?
+  get onOpenOptionChain => throw UnimplementedError();
+
+  @override
+  // TODO: implement onOpenOrders
+  VoidCallback? get onOpenOrders => throw UnimplementedError();
+
+  @override
+  // TODO: implement onOpenPositions
+  VoidCallback? get onOpenPositions => throw UnimplementedError();
 }
