@@ -1318,4 +1318,8 @@ class NxtChartRepository implements ChartInterface {
   @override
   // TODO: implement onOpenPositions
   VoidCallback? get onOpenPositions => throw UnimplementedError();
+
+  @override
+  // TODO: implement onOpenFunds
+  VoidCallback? get onOpenFunds => throw UnimplementedError();
 }
