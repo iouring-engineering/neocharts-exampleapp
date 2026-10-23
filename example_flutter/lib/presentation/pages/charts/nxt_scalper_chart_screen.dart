@@ -14,6 +14,18 @@ class NxtScalperChartScreen extends StatelessWidget {
     return NxtChartPage(
       dataProvider: dataProvider,
       homeKey: _homeKey.isEmpty ? null : _homeKey,
+      style: _demoStyle,
     );
   }
 }
+
+// Demo brand colors for both modes -- see the theming docs for all 14 tokens.
+const _demoColors = NxtChartColorOverrides(
+  primary: Color(0xFF7B1FA2),
+  bullish: Color(0xFF26A69A),
+  bearish: Color(0xFFEF5350),
+);
+const _demoStyle = NxtChartStyle(
+  lightColors: _demoColors,
+  darkColors: _demoColors,
+);

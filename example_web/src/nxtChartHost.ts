@@ -28,6 +28,7 @@ import {
   nextTicks,
   optionSymbolsForJson,
   optionSymbolsJson,
+  placedOrder,
   searchSymbols,
   seedOcoOrders,
   seedOrders,
@@ -50,6 +51,7 @@ export interface NxtChartHost {
   readonly storageKey: string
   readonly primaryColor: string | null
   readonly onPrimaryColor: string | null
+  readonly chartColors: string | null
   readonly forcedBrightness: 'light' | 'dark' | null
 
   loadData(
@@ -146,6 +148,11 @@ export const nxtChartHost: NxtChartHost = {
   get storageKey() { return 'js-host-demo' },
   get primaryColor() { return '#2EA7E0' },
   get onPrimaryColor() { return '#FFFFFF' },
+  // Demo brand colors for both modes -- see the theming docs for all 14 tokens.
+  get chartColors() {
+    const demo = { primary: '#7B1FA2', bullish: '#26A69A', bearish: '#EF5350' }
+    return JSON.stringify({ light: demo, dark: demo })
+  },
   get forcedBrightness() {
     return localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null
   },
@@ -177,15 +184,7 @@ export const nxtChartHost: NxtChartHost = {
   placeOrder(params) {
     const p = JSON.parse(params) as Record<string, unknown>
     orderCounter++
-    orders.push({
-      orderID: `ORD${String(orderCounter).padStart(3, '0')}`,
-      symbolID: p.symID,
-      avgPrice: p.price ?? 0,
-      type: p.orderType ?? 'limit',
-      netQty: p.qty ?? 0,
-      fillQty: 0,
-      orderAction: p.orderAction ?? 'buy',
-    })
+    orders.push(placedOrder(`ORD${String(orderCounter).padStart(3, '0')}`, p))
     dispatch('nxtchart:orders', orders)
     dispatch('nxtchart:actionFeedback', { type: 'positive', message: 'Order placed' })
   },

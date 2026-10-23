@@ -48,6 +48,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     result(true)
                 case "storageKey":
                     result("default")
+                case "theme":
+                    // Demo brand colors; null brightness follows the system.
+                    result("""
+                    {"brightness": null, "colors": {
+                      "light": {"primary": "#7B1FA2", "bullish": "#26A69A", "bearish": "#EF5350"},
+                      "dark":  {"primary": "#7B1FA2", "bullish": "#26A69A", "bearish": "#EF5350"}}}
+                    """)
                 case "underlyingSymbolInfo":
                     result(self.mockData.symbolInfo())
                 case "futureSymbols":
