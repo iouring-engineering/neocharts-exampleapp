@@ -65,7 +65,6 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
-  flutter_bloc: any
 flutter:
   config:
     enable-swift-package-manager: true
