@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';
 
+const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
+
 class NxtScalperChartScreen extends StatelessWidget {
   const NxtScalperChartScreen({super.key, required this.dataProvider});
 
@@ -9,7 +11,11 @@ class NxtScalperChartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NxtChartPage(dataProvider: dataProvider, style: _demoStyle);
+    return NxtChartPage(
+      dataProvider: dataProvider,
+      homeKey: _homeKey.isEmpty ? null : _homeKey,
+      style: _demoStyle,
+    );
   }
 }
 
