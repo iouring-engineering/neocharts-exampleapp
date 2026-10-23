@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
-
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/enums/oi_change_interval.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
+import 'package:patrol/patrol.dart';
 
 import '../helpers.dart';
 import 'analysis_test_helpers.dart';
