@@ -2,12 +2,11 @@
 // LTP crossline marker moves for every ChartType while ticks stream, via the
 // normal (single-panel) chart and its own chart-type menu -- reachable
 // through the app bar's settings icon.
-import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
-
 import 'package:financial_chart/financial_chart.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nxtchart/src/enums/chart_type.dart';
 import 'package:nxtchart/src/shared/constants.dart';
+import 'package:patrol/patrol.dart';
 
 import 'helpers.dart';
 

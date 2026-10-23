@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
-
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/enums/pcr_range.dart';
+import 'package:patrol/patrol.dart';
 
 import 'analysis_test_helpers.dart';
 
