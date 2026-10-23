@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';
 
-const _freePass = String.fromEnvironment('NEOCHARTS_FREE_PASS');
+const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
 
 class NxtScalperChartScreen extends StatelessWidget {
   const NxtScalperChartScreen({super.key, required this.dataProvider});
@@ -13,7 +13,7 @@ class NxtScalperChartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return NxtChartPage(
       dataProvider: dataProvider,
-      freePass: _freePass.isEmpty ? null : _freePass,
+      homeKey: _homeKey.isEmpty ? null : _homeKey,
     );
   }
 }
