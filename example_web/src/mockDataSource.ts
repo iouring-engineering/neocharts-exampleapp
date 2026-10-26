@@ -146,12 +146,12 @@ function data(): Fixture {
   return fixture
 }
 
-// Looks up any tradable instrument (future or option) by id -- the index
-// itself is deliberately excluded, since it isn't tradable (see
-// seedOrders/seedPositions, which resolve each row's own symID through
-// this instead of a single hardcoded symbol).
+// Looks up any tradable instrument (future, option or equity) by id -- the
+// index itself is deliberately excluded, since it isn't tradable (see
+// seedOrders/seedPositions/placedOrder, which resolve each row's own symID
+// through this instead of a single hardcoded symbol).
 function symbolByID(symID: string): SymbolInfo {
-  const found = [...data().futureSymbols, ...data().optionChain].find((s) => s.id === symID)
+  const found = [...data().futureSymbols, ...data().optionChain, ...data().equitySymbols].find((s) => s.id === symID)
   if (!found) throw new Error(`mock fixture: unknown symID ${symID}`)
   return found
 }
@@ -431,6 +431,22 @@ export const seedOrders = () =>
     }
     return resolved
   })
+// A just-placed order, shaped like a seedOrders row (`Order.fromJson` reads
+// `symbol`, `productType`, `orderStatus`, `ordTime`) from `placeOrder`'s
+// OrderParams JSON.
+export const placedOrder = (orderID: string, p: Record<string, unknown>) => ({
+  orderID,
+  symbol: symbolByID(p.symID as string),
+  type: p.orderType ?? 'limit',
+  orderAction: p.orderAction ?? 'buy',
+  productType: p.productType ?? 'normal',
+  avgPrice: p.price ?? 0,
+  netQty: p.qty ?? 0,
+  fillQty: 0,
+  orderStatus: 'open',
+  triggerPrice: p.triggerPrice ?? 0,
+  ordTime: formatOrdTime(0),
+})
 // `pnl`/`unrealizedPL`/`mtm` are display-only computed values a real host
 // derives from the live price, so the fixture's schema doesn't carry them --
 // synthesize them here, same as `symbol`.

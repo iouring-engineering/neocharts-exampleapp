@@ -87,6 +87,12 @@ class MainActivity : AppCompatActivity() {
                 "hasOCO" -> result.success(false)
                 "isMarketOrderSupported" -> result.success(true)
                 "storageKey" -> result.success("default")
+                // Demo brand colors; null brightness follows the system.
+                "theme" -> result.success(
+                    """{"brightness": null, "colors": {
+                        "light": {"primary": "#7B1FA2", "bullish": "#26A69A", "bearish": "#EF5350"},
+                        "dark":  {"primary": "#7B1FA2", "bullish": "#26A69A", "bearish": "#EF5350"}}}"""
+                )
                 "underlyingSymbolInfo" -> result.success(mockData.symbolInfo())
                 "futureSymbols" -> result.success(mockData.futureSymbols())
                 "indexSymbols" -> result.success(mockData.indexSymbols())

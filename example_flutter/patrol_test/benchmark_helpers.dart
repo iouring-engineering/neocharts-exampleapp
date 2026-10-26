@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
-
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
+import 'package:patrol/patrol.dart';
 
 /// Single-frame timing snapshot read from the perf overlay widgets.
 class BenchmarkSample {
