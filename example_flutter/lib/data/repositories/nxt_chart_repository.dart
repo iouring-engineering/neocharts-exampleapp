@@ -1299,7 +1299,7 @@ class NxtChartRepository implements ChartInterface {
   }
 
   @override
-  Future<String> fetchBrokerage(String params) async {
+  Future<String?> fetchBrokerage(String params) async {
     final decoded = jsonDecode(params) as Map<String, dynamic>;
     final quantity = (decoded['quantity'] as num?)?.toInt() ?? 0;
     final price = (decoded['price'] as num?)?.toDouble() ?? 0;
@@ -1311,7 +1311,7 @@ class NxtChartRepository implements ChartInterface {
   }
 
   @override
-  Future<String> fetchMargin(String params) async {
+  Future<String?> fetchMargin(String params) async {
     final decoded = jsonDecode(params) as Map<String, dynamic>;
     final lots = (decoded['lots'] as num?)?.toInt() ?? 0;
     final ltp = (decoded['ltp'] as num?)?.toDouble() ?? 0;

@@ -82,7 +82,7 @@ export interface NxtChartHost {
   fetchAtmStraddleIntraday(): Promise<string>
   fetchAtmIvIntraday(): Promise<string>
   fundsData(): Promise<string>
-  fetchMargin(params: string): Promise<string>
+  fetchMargin(params: string): Promise<string | null>
 
   underlyingSymbolInfoFor(symbolId: string): Promise<string | null>
   optionSymbolsFor(underlyingId: string): Promise<string>
