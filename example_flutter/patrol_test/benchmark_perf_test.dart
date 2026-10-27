@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
+import 'package:nxtchart/src/enums/chart_indicator.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -204,7 +205,7 @@ void main() {
 
       // Stage 1: add SMA.
       await openIndicatorMenu($);
-      await $(Key(ChartTestKeys.indicatorBrowseRow('sma'))).tap();
+      await tapIndicatorRow($, ChartIndicator.sma);
       await $.pumpAndSettle();
       await closeMenu($);
       await awaitPerfOverlay($);
@@ -212,11 +213,14 @@ void main() {
       final withSma = await sampleMetrics($, tag: 'stack_sma');
       logRun(withSma);
       assertFrameBudgetP95(withSma, 16667);
-      expect(find.byKey(Key(ChartTestKeys.legendRow('sma'))), findsOneWidget);
+      expect(
+        find.byKey(Key(ChartTestKeys.legendRow(ChartIndicator.sma.key))),
+        findsOneWidget,
+      );
 
       // Stage 2: add EMA on top of SMA.
       await openIndicatorMenu($);
-      await $(Key(ChartTestKeys.indicatorBrowseRow('ema'))).tap();
+      await tapIndicatorRow($, ChartIndicator.ema);
       await $.pumpAndSettle();
       await closeMenu($);
       await awaitPerfOverlay($);
@@ -229,7 +233,7 @@ void main() {
       await openIndicatorMenu($);
       await $(Key(ChartTestKeys.indicatorTabPanel)).tap();
       await $.pumpAndSettle();
-      await $(Key(ChartTestKeys.indicatorBrowseRow('rsi'))).tap();
+      await tapIndicatorRow($, ChartIndicator.rsi);
       await $.pumpAndSettle();
       await closeMenu($);
       await awaitPerfOverlay($);
@@ -238,7 +242,10 @@ void main() {
       logRun(withAll);
       assertFrameBudgetP95(withAll, 16667);
 
-      expect(find.byKey(Key(ChartTestKeys.legendRow('rsi'))), findsOneWidget);
+      expect(
+        find.byKey(Key(ChartTestKeys.legendRow(ChartIndicator.rsi.key))),
+        findsOneWidget,
+      );
       expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
     });
   });
@@ -263,9 +270,9 @@ void main() {
 
       // Add SMA + EMA (two additional overlay graph renderers).
       await openIndicatorMenu($);
-      await $(Key(ChartTestKeys.indicatorBrowseRow('sma'))).tap();
+      await tapIndicatorRow($, ChartIndicator.sma);
       await $.pumpAndSettle();
-      await $(Key(ChartTestKeys.indicatorBrowseRow('ema'))).tap();
+      await tapIndicatorRow($, ChartIndicator.ema);
       await $.pumpAndSettle();
       await closeMenu($);
       await awaitPerfOverlay($);
@@ -277,7 +284,7 @@ void main() {
       await openIndicatorMenu($);
       await $(Key(ChartTestKeys.indicatorTabPanel)).tap();
       await $.pumpAndSettle();
-      await $(Key(ChartTestKeys.indicatorBrowseRow('rsi'))).tap();
+      await tapIndicatorRow($, ChartIndicator.rsi);
       await $.pumpAndSettle();
       await closeMenu($);
       await awaitPerfOverlay($);
@@ -540,35 +547,40 @@ void main() {
       },
     );
 
-    patrolTest('toggling CALL/PUT while streaming stays within 60 fps budget', (
-      $,
-    ) async {
-      await _pumpHomeAndAwaitReady($);
-      await configureBenchmark($, datasetSize: DatasetSize.s1k, liveData: true);
-      await _openChartFromHome($);
-      await awaitPerfOverlay($);
+    patrolTest(
+      'toggling CALL or PUT while streaming stays within 60 fps budget',
+      ($) async {
+        await _pumpHomeAndAwaitReady($);
+        await configureBenchmark(
+          $,
+          datasetSize: DatasetSize.s1k,
+          liveData: true,
+        );
+        await _openChartFromHome($);
+        await awaitPerfOverlay($);
 
-      await openOptionChain($);
-      await waitUntilPresent(
-        $,
-        findByKeyPrefix('chart_option_chain_strike_cell_'),
-      );
-      await awaitPerfOverlay($);
-      await $.tester.pump(const Duration(seconds: 3));
+        await openOptionChain($);
+        await waitUntilPresent(
+          $,
+          findByKeyPrefix('chart_option_chain_strike_cell_'),
+        );
+        await awaitPerfOverlay($);
+        await $.tester.pump(const Duration(seconds: 3));
 
-      await $.tester.tap(
-        find.byKey(Key(ChartTestKeys.optionChainTypeTab('PE'))),
-      );
-      await $.tester.pump();
+        await $.tester.tap(
+          find.byKey(Key(ChartTestKeys.optionChainTypeTab('PE'))),
+        );
+        await $.tester.pump();
 
-      final run = await sampleMetrics($, tag: 'option_chain_call_put_toggle');
-      logRun(run);
-      assertFrameBudgetP95(run, 16667);
+        final run = await sampleMetrics($, tag: 'option_chain_call_put_toggle');
+        logRun(run);
+        assertFrameBudgetP95(run, 16667);
 
-      expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
+        expect(find.byKey(Key(ChartTestKeys.errorState)), findsNothing);
 
-      await closeOptionChain($);
-    });
+        await closeOptionChain($);
+      },
+    );
 
     patrolTest('toggling Greeks while streaming stays within 60 fps budget', (
       $,
@@ -620,7 +632,7 @@ void main() {
       await openIndicatorMenu($);
       await waitUntilPresent(
         $,
-        find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+        find.byKey(Key(ChartTestKeys.indicatorSearchField)),
       );
       await awaitPerfOverlay($);
 
@@ -644,7 +656,7 @@ void main() {
         await openIndicatorMenu($);
         await waitUntilPresent(
           $,
-          find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+          find.byKey(Key(ChartTestKeys.indicatorSearchField)),
         );
         await awaitPerfOverlay($);
 
@@ -675,7 +687,7 @@ void main() {
         await openIndicatorMenu($);
         await waitUntilPresent(
           $,
-          find.byKey(Key(ChartTestKeys.indicatorBrowseRow('sma'))),
+          find.byKey(Key(ChartTestKeys.indicatorSearchField)),
         );
         await awaitPerfOverlay($);
 
