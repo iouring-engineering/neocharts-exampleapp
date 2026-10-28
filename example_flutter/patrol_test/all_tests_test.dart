@@ -61,6 +61,7 @@ import 'positions/positions_list_test.dart' as positions__positions_list_test;
 import 'range_switching_test.dart' as range_switching_test;
 import 'top_options_test.dart' as top_options_test;
 import 'trading_test.dart' as trading_test;
+import 'uni_chart_test.dart' as uni_chart_test;
 
 void main() {
   group('alerts.alert_chart_marker_test', alerts__alert_chart_marker_test.main);
@@ -131,4 +132,5 @@ void main() {
   group('range_switching_test', range_switching_test.main);
   group('top_options_test', top_options_test.main);
   group('trading_test', trading_test.main);
+  group('uni_chart_test', uni_chart_test.main);
 }
