@@ -9,6 +9,7 @@ class ChartTemplateApp extends StatefulWidget {
     this.interfaceOverride,
     this.onInitDone,
     this.onInitError,
+    this.disabledFeatures = const [],
   });
 
   /// Test-only: substitutes the [ChartInterface] this app would otherwise
@@ -16,6 +17,10 @@ class ChartTemplateApp extends StatefulWidget {
   final ChartInterface? interfaceOverride;
   final void Function()? onInitDone;
   final void Function(Object)? onInitError;
+
+  /// Test-only: forwarded to [NxtChartPage.disabledFeatures] via
+  /// [HomePage] and [NxtScalperChartScreen]. Empty for real end-user usage.
+  final List<String> disabledFeatures;
 
   @override
   State<ChartTemplateApp> createState() => _ChartTemplateAppState();
@@ -92,6 +97,7 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
               onToggleTheme: _toggleTheme,
               isDark: _themeMode == ThemeMode.dark,
               interfaceOverride: widget.interfaceOverride,
+              disabledFeatures: widget.disabledFeatures,
             ),
     );
   }
