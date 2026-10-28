@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:financial_chart/financial_chart.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
+import 'package:nxtchart/src/enums/chart_indicator.dart';
+import 'package:nxtchart/src/licensing/license_runtime.dart';
+import 'package:nxtchart/src/presentation/pages/nxt_chart_page.dart';
 import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
+
+// Call first thing in every test file's `main`.
+//
+// The first native automation call on Android starts UiAutomator, which turns
+// accessibility on mid-test; the engine's resulting onSemanticsEnabledChanged
+// makes Flutter open a SemanticsHandle that is still open when it verifies the
+// end of the first test (https://github.com/leancodepl/patrol/pull/1352).
+// Nothing in these tests needs the platform's accessibility state, so stop
+// listening to it.
+void ignorePlatformSemanticsChanges() {
+  setUpAll(() {
+    PlatformDispatcher.instance.onSemanticsEnabledChanged = null;
+  });
+}
 
 // Polls until [finder] finds no widgets, or [timeout] elapses.
 // patrol 3.x/4.x has no built-in "waitUntilGone"; this fills that gap.
@@ -32,6 +50,19 @@ Future<void> waitUntilAbsent(
   await $.pumpAndSettle();
 }
 
+class _AllFeaturesRuntime implements LicenseRuntime {
+  @override
+  Stream<Set<String>?> start() => Stream.value(const {'*'});
+}
+
+// The example app ships no neocharts-key.json, so the real license check
+// reports "unlicensed" and NxtChartPage renders LicenseErrorView instead of
+// the chart. Tests stub the check to grant every feature.
+void grantAllFeatures() {
+  // ignore: invalid_use_of_visible_for_testing_member
+  NxtChartPage.runtimeFactory = ({homeKey}) => _AllFeaturesRuntime();
+}
+
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
 // page's "NeoCharts" card. [interfaceOverride], when supplied, replaces the
 // ChartInterface the app would otherwise construct itself -- e.g. a handle
@@ -40,6 +71,7 @@ Future<void> openChartAndAwaitLoad(
   PatrolIntegrationTester $, {
   ChartInterface? interfaceOverride,
 }) async {
+  grantAllFeatures();
   final completer = Completer<void>();
   await $.pumpWidget(
     ChartTemplateApp(
@@ -427,9 +459,60 @@ Future<void> waitUntilPresent(
   }
 }
 
-// Closes the chart menu (toggle off).
+// Closes the chart menu. The popup sits under a full-screen barrier that
+// covers its own toggle button, so the toggle can't be tapped while the menu
+// is open; tapping the barrier (the top-left corner is never under the popup)
+// dismisses it instead.
 Future<void> closeMenu(PatrolIntegrationTester $) async {
-  await $(Key(ChartTestKeys.menuToggleBtn)).tap();
+  await $.tester.tapAt(const Offset(10, 10));
+  await $.pumpAndSettle();
+}
+
+// The vertical list inside the indicator browser's tab view (the tab bar and
+// the page view are horizontal scrollables).
+Finder get indicatorBrowserList => find
+    .descendant(
+      of: find.byType(TabBarView),
+      matching: find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      ),
+    )
+    .first;
+
+// The indicator browser row for [indicator] (built only near the viewport).
+Finder indicatorBrowseRowFinder(ChartIndicator indicator) =>
+    find.byKey(Key(ChartTestKeys.indicatorBrowseRow(indicator.key)));
+
+// Scrolls the indicator browser's current tab back to the top, then down
+// until [indicator]'s row has been built, then brings it fully on screen.
+// The rows live in a lazy ListView and the viewport can be only a few rows
+// tall, so waiting for the row to be hit-testable would step over rows --
+// rows are built a little before they scroll into view, so step by less than
+// that and check for existence instead. Searching instead would focus the
+// search field, which opens the on-screen keypad over the list.
+Future<void> revealIndicatorRow(
+  PatrolIntegrationTester $,
+  ChartIndicator indicator,
+) async {
+  final row = indicatorBrowseRowFinder(indicator);
+  await $.tester.drag(indicatorBrowserList, const Offset(0, 100000));
+  await $.pumpAndSettle();
+  for (var n = 0; n < 200 && row.evaluate().isEmpty; n++) {
+    await $.tester.drag(indicatorBrowserList, const Offset(0, -150));
+    await $.pump();
+  }
+  await $.tester.ensureVisible(row);
+  await $.pumpAndSettle();
+}
+
+// Scrolls to [indicator]'s row in the indicator browser's current tab and
+// taps it.
+Future<void> tapIndicatorRow(
+  PatrolIntegrationTester $,
+  ChartIndicator indicator,
+) async {
+  await revealIndicatorRow($, indicator);
+  await $(Key(ChartTestKeys.indicatorBrowseRow(indicator.key))).tap();
   await $.pumpAndSettle();
 }
 
