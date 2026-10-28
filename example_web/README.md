@@ -22,7 +22,7 @@ dev and CI builds. To load the bundle from a CDN instead, override it at
 build time:
 
 ```bash
-VITE_SDK_ASSET_BASE=https://cdn.nxtoption.com/neocharts-sdk/ npm run build
+VITE_SDK_ASSET_BASE=https://cdn.nxtoption.com/neocharts-sdk/0.0.58/ npm run build
 ```
 
 CDN mode assumes whatever is hosted there is the SDK's `-cdn` tarball
