@@ -1319,31 +1319,4 @@ class NxtChartRepository implements ChartInterface {
   void closeRequested() {
     // TODO: implement closeRequested
   }
-
-  @override
-  Future<String?> fetchBrokerage(String params) async {
-    final decoded = jsonDecode(params) as Map<String, dynamic>;
-    final quantity = (decoded['quantity'] as num?)?.toInt() ?? 0;
-    final price = (decoded['price'] as num?)?.toDouble() ?? 0;
-
-    // Mock: a flat 0.03% of notional, same for Buy and Sell.
-    final brokerage = quantity * price * 0.0003;
-
-    return jsonEncode({"brokerage": brokerage});
-  }
-
-  @override
-  Future<String?> fetchMargin(String params) async {
-    final decoded = jsonDecode(params) as Map<String, dynamic>;
-    final lots = (decoded['lots'] as num?)?.toInt() ?? 0;
-    final ltp = (decoded['ltp'] as num?)?.toDouble() ?? 0;
-    final action = decoded['action'] as String? ?? 'Buy';
-
-    // Mock: buying costs the premium outright, writing (selling) is
-    // margin-based and roughly 3x the notional -- just enough spread for the
-    // demo to visibly differ between the two sides.
-    final margin = action == 'Buy' ? lots * ltp : lots * ltp * 3;
-
-    return jsonEncode({"marginRequired": margin});
-  }
 }
