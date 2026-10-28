@@ -5,15 +5,22 @@ import 'package:nxtchart/widgets.dart';
 const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
 
 class NxtScalperChartScreen extends StatelessWidget {
-  const NxtScalperChartScreen({super.key, required this.dataProvider});
+  const NxtScalperChartScreen({
+    super.key,
+    required this.dataProvider,
+    this.widgetOverrides,
+  });
 
   final ChartInterface dataProvider;
+  final NeoChartWidgetOverrides? widgetOverrides;
 
   @override
   Widget build(BuildContext context) {
+    final homeKey = _homeKey.isEmpty ? null : _homeKey;
     return NxtChartPage(
       dataProvider: dataProvider,
-      homeKey: _homeKey.isEmpty ? null : _homeKey,
+      widgetOverrides: widgetOverrides,
+      homeKey: homeKey,
       style: _demoStyle,
     );
   }
