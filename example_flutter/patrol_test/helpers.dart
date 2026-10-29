@@ -10,7 +10,7 @@ import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/src/enums/chart_indicator.dart';
 import 'package:nxtchart/src/licensing/license_runtime.dart';
-import 'package:nxtchart/src/presentation/pages/nxt_chart_page.dart';
+import 'package:nxtchart/widgets.dart';
 import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
@@ -66,10 +66,13 @@ void grantAllFeatures() {
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
 // page's "NeoCharts" card. [interfaceOverride], when supplied, replaces the
 // ChartInterface the app would otherwise construct itself -- e.g. a handle
-// to seed positions on via seedPosition().
+// to seed positions on via seedPosition(). [cardTitle] picks which home card
+// to open ('NeoCharts' by default; 'UniChart' for the single-chart page).
 Future<void> openChartAndAwaitLoad(
   PatrolIntegrationTester $, {
   ChartInterface? interfaceOverride,
+  NeoChartWidgetOverrides? widgetOverrides,
+  String cardTitle = 'NeoCharts',
 }) async {
   grantAllFeatures();
   final completer = Completer<void>();
@@ -86,7 +89,7 @@ Future<void> openChartAndAwaitLoad(
   // header logo repeats the same "NeoCharts" text right above this card.
   final chartCard = find.descendant(
     of: find.byType(ChartCard),
-    matching: find.text('NeoCharts'),
+    matching: find.text(cardTitle),
   );
   await $.tester.ensureVisible(chartCard);
   await $.tester.pumpAndSettle();
@@ -605,3 +608,7 @@ GChart currentChartRightPanel(PatrolIntegrationTester $) {
   );
   return BlocProvider.of<ChartBloc>(overlayElement).state.chart!;
 }
+
+// Opens the home page's "UniChart" card and waits for its chart to load.
+Future<void> openUniChartAndAwaitLoad(PatrolIntegrationTester $) =>
+    openChartAndAwaitLoad($, cardTitle: 'UniChart');
