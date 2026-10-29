@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:neocharts_exampleapp/data/datasources/mock_chart_data_source.dart';
 import 'package:neocharts_exampleapp/data/datasources/stream_rate.dart';
@@ -568,6 +569,27 @@ class NxtChartRepository implements ChartInterface {
     _emitOrders();
 
     _feedback(type: 'negative', message: 'Order $orderID cancelled');
+  }
+
+  /// Mock margin: the full order value, or 20% of it for intraday.
+  @override
+  Future<String?> fetchMargin(String params) async {
+    final data = jsonDecode(params) as Map<String, dynamic>;
+    final lots = toInt(data['lots']) ?? 1;
+    final value = lots * MockChartDataSource.lotSize * toDouble(data['ltp']);
+    final share = data['prdType'] == 'intraday' ? 0.2 : 1.0;
+
+    return jsonEncode({'marginRequired': value * share});
+  }
+
+  /// Mock brokerage: 0.03% of the order value, capped at ₹20.
+  @override
+  Future<String?> fetchBrokerage(String params) async {
+    final data = jsonDecode(params) as Map<String, dynamic>;
+    final quantity = toInt(data['quantity']) ?? MockChartDataSource.lotSize;
+    final value = quantity * toDouble(data['price']);
+
+    return jsonEncode({'brokerage': min(value * 0.0003, 20.0)});
   }
 
   @override

@@ -15,15 +15,18 @@ data, not just a stub.
 
 ## SDK bundle source
 
-`VITE_SDK_ASSET_BASE` (see `.env`) controls where the compiled SDK web bundle
-(`flutter.js`, `main.dart.js`, `assets/`) is loaded from. It defaults to
-`/build_web/`, a symlink to the sibling Flutter build output used by local
-dev and CI builds. To load the bundle from a CDN instead, override it at
-build time:
+`VITE_SDK_ASSET_BASE` controls where the compiled SDK web bundle
+(`flutter.js`, `main.dart.js`, `assets/`) is loaded from:
 
-```bash
-VITE_SDK_ASSET_BASE=https://cdn.nxtoption.com/neocharts-sdk/ npm run build
-```
+| Command | Reads | Loads the SDK from |
+|---|---|---|
+| `npm run dev` | `.env.development` | `/build_web/`, a symlink to the sibling Flutter build output |
+| `npm run dev -- --mode cdn` | `.env` | the CDN |
+| `npm run build` | `.env` | the CDN |
+
+Each SDK release has its own CDN folder,
+`https://cdn.nxtoption.com/neocharts-sdk/<version>/`. `.env` holds the current
+one; change only that line to move to a new release.
 
 CDN mode assumes whatever is hosted there is the SDK's `-cdn` tarball
 variant — it fetches CanvasKit from Google's `gstatic.com` itself, since
