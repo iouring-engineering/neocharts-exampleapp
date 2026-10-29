@@ -28,9 +28,9 @@ void main() {
     ) async {
       var opened = 0;
       void Function(String)? pick;
-      await openChartAndAwaitLoad(
+      await openChartWithOverridesAndAwaitLoad(
         $,
-        widgetOverrides: NeoChartWidgetOverrides(
+        NeoChartWidgetOverrides(
           onOpenSearch: (onSymbolSelected) {
             opened++;
             pick = onSymbolSelected;
@@ -50,9 +50,9 @@ void main() {
     });
 
     patrolTest('backing out leaves the chart as it was', ($) async {
-      await openChartAndAwaitLoad(
+      await openChartWithOverridesAndAwaitLoad(
         $,
-        widgetOverrides: NeoChartWidgetOverrides(onOpenSearch: (_) {}),
+        NeoChartWidgetOverrides(onOpenSearch: (_) {}),
       );
       final before = chartedId($);
 

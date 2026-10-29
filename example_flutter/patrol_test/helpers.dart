@@ -5,14 +5,15 @@ import 'package:financial_chart/financial_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/src/enums/chart_indicator.dart';
 import 'package:nxtchart/src/licensing/license_runtime.dart';
-import 'package:nxtchart/src/presentation/pages/nxt_chart_page.dart';
 import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
+import 'package:nxtchart/widgets.dart';
 import 'package:patrol/patrol.dart';
 
 // Call first thing in every test file's `main`.
@@ -91,6 +92,29 @@ Future<void> openChartAndAwaitLoad(
   await $.tester.ensureVisible(chartCard);
   await $.tester.pumpAndSettle();
   await $.tester.tap(chartCard);
+  await $.pumpAndSettle();
+  await waitUntilAbsent(
+    $,
+    find.byKey(Key(ChartTestKeys.loadingState)),
+    timeout: const Duration(seconds: 30),
+  );
+}
+
+// Pumps NxtChartPage directly with [widgetOverrides], skipping the home
+// page, so the example app itself never takes overrides.
+Future<void> openChartWithOverridesAndAwaitLoad(
+  PatrolIntegrationTester $,
+  NeoChartWidgetOverrides widgetOverrides,
+) async {
+  grantAllFeatures();
+  await $.pumpWidget(
+    MaterialApp(
+      home: NxtChartPage(
+        dataProvider: NxtChartRepository(storageKey: 'scalper_chart'),
+        widgetOverrides: widgetOverrides,
+      ),
+    ),
+  );
   await $.pumpAndSettle();
   await waitUntilAbsent(
     $,
