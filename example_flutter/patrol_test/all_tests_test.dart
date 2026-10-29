@@ -43,7 +43,6 @@ import 'performance/orders_perf_test.dart' as performance__orders_perf_test;
 import 'performance/positions_perf_test.dart'
     as performance__positions_perf_test;
 import 'performance/search_perf_test.dart' as performance__search_perf_test;
-import 'pl_feature_disabled_test.dart' as pl_feature_disabled_test;
 import 'pl_test.dart' as pl_test;
 import 'positions/add_position_test.dart' as positions__add_position_test;
 import 'positions/adjust_position_test.dart' as positions__adjust_position_test;
@@ -104,7 +103,6 @@ void main() {
     performance__positions_perf_test.main,
   );
   group('performance.search_perf_test', performance__search_perf_test.main);
-  group('pl_feature_disabled_test', pl_feature_disabled_test.main);
   group('pl_test', pl_test.main);
   group('positions.add_position_test', positions__add_position_test.main);
   group('positions.adjust_position_test', positions__adjust_position_test.main);

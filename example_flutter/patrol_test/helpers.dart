@@ -66,12 +66,10 @@ void grantAllFeatures() {
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
 // page's "NeoCharts" card. [interfaceOverride], when supplied, replaces the
 // ChartInterface the app would otherwise construct itself -- e.g. a handle
-// to seed positions on via seedPosition(). [disabledFeatures] is forwarded
-// to NxtChartPage.disabledFeatures (e.g. `['pl']`), empty by default.
+// to seed positions on via seedPosition().
 Future<void> openChartAndAwaitLoad(
   PatrolIntegrationTester $, {
   ChartInterface? interfaceOverride,
-  List<String> disabledFeatures = const [],
 }) async {
   grantAllFeatures();
   final completer = Completer<void>();
@@ -80,7 +78,6 @@ Future<void> openChartAndAwaitLoad(
       interfaceOverride: interfaceOverride,
       onInitDone: completer.complete,
       onInitError: completer.completeError,
-      disabledFeatures: disabledFeatures,
     ),
   );
   await completer.future;

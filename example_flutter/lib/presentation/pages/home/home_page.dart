@@ -17,16 +17,11 @@ class HomePage extends StatefulWidget {
   /// end-user usage, where each chart open gets its own fresh instance.
   final ChartInterface? interfaceOverride;
 
-  /// Test-only: forwarded to [NxtChartPage.disabledFeatures] via
-  /// [NxtScalperChartScreen]. Empty for real end-user usage.
-  final List<String> disabledFeatures;
-
   const HomePage({
     super.key,
     required this.onToggleTheme,
     required this.isDark,
     this.interfaceOverride,
-    this.disabledFeatures = const [],
   });
 
   @override
@@ -199,7 +194,6 @@ class _HomePageState extends State<HomePage> {
                                   MaterialPageRoute(
                                     builder: (context) => NxtScalperChartScreen(
                                       dataProvider: _resolveInterface(),
-                                      disabledFeatures: widget.disabledFeatures,
                                     ),
                                   ),
                                 );

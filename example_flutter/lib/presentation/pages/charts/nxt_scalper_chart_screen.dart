@@ -5,17 +5,9 @@ import 'package:nxtchart/widgets.dart';
 const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
 
 class NxtScalperChartScreen extends StatelessWidget {
-  const NxtScalperChartScreen({
-    super.key,
-    required this.dataProvider,
-    this.disabledFeatures = const [],
-  });
+  const NxtScalperChartScreen({super.key, required this.dataProvider});
 
   final ChartInterface dataProvider;
-
-  /// Test-only: forwarded to [NxtChartPage.disabledFeatures]. Empty for
-  /// real end-user usage.
-  final List<String> disabledFeatures;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +15,6 @@ class NxtScalperChartScreen extends StatelessWidget {
       dataProvider: dataProvider,
       homeKey: _homeKey.isEmpty ? null : _homeKey,
       style: _demoStyle,
-      disabledFeatures: disabledFeatures,
     );
   }
 }
