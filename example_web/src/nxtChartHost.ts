@@ -82,6 +82,7 @@ export interface NxtChartHost {
   fetchAtmStraddleIntraday(): Promise<string>
   fetchAtmIvIntraday(): Promise<string>
   fundsData(): Promise<string>
+  fetchMargin(params: string): Promise<string | null>
 
   underlyingSymbolInfoFor(symbolId: string): Promise<string | null>
   optionSymbolsFor(underlyingId: string): Promise<string>
@@ -171,6 +172,13 @@ export const nxtChartHost: NxtChartHost = {
   fetchAtmStraddleIntraday() { return Promise.resolve(fetchAtmStraddleIntradayJson()) },
   fetchAtmIvIntraday() { return Promise.resolve(fetchAtmIvIntradayJson()) },
   fundsData() { return Promise.resolve(JSON.stringify({ availableMargin: 347500.0, usedMargin: 152500.0 })) },
+  fetchMargin(params) {
+    const p = JSON.parse(params) as Record<string, unknown>
+    const lots = Number(p.lots ?? 0)
+    const ltp = Number(p.ltp ?? 0)
+    const marginRequired = p.action === 'Buy' ? lots * ltp : lots * ltp * 3
+    return Promise.resolve(JSON.stringify({ marginRequired }))
+  },
 
   underlyingSymbolInfoFor(symbolId) { return Promise.resolve(underlyingSymbolInfoForJson(symbolId)) },
   optionSymbolsFor(underlyingId) { return Promise.resolve(optionSymbolsForJson(underlyingId)) },

@@ -35,6 +35,8 @@ import 'orders/oco/oco_cancel_test.dart' as orders__oco__oco_cancel_test;
 import 'orders/oco/oco_create_test.dart' as orders__oco__oco_create_test;
 import 'orders/oco/oco_modify_test.dart' as orders__oco__oco_modify_test;
 import 'orders/order_chart_marker_test.dart' as orders__order_chart_marker_test;
+import 'orders/order_pad_margin_brokerage_test.dart'
+    as orders__order_pad_margin_brokerage_test;
 import 'orders/place_order_test.dart' as orders__place_order_test;
 import 'performance/alerts_perf_test.dart' as performance__alerts_perf_test;
 import 'performance/orders_perf_test.dart' as performance__orders_perf_test;
@@ -89,6 +91,10 @@ void main() {
   group('orders.oco.oco_create_test', orders__oco__oco_create_test.main);
   group('orders.oco.oco_modify_test', orders__oco__oco_modify_test.main);
   group('orders.order_chart_marker_test', orders__order_chart_marker_test.main);
+  group(
+    'orders.order_pad_margin_brokerage_test',
+    orders__order_pad_margin_brokerage_test.main,
+  );
   group('orders.place_order_test', orders__place_order_test.main);
   group('performance.alerts_perf_test', performance__alerts_perf_test.main);
   group('performance.orders_perf_test', performance__orders_perf_test.main);
