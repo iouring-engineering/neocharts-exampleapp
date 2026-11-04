@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:nxtchart/src/enums/chart_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
 import 'helpers.dart';
+import 'positions/positions_test_helpers.dart';
 
 // UniChart (`NxtChartPage.uni`): one chart under a compact toolbar, with a
 // collapsible drawing rail floating over it, opened here from its home card
@@ -20,6 +22,18 @@ final _collapseBtn = find.byKey(const Key(ChartTestKeys.uniRailCollapseBtn));
 Future<void> _expandRail(PatrolIntegrationTester $) async {
   await $.tester.tap(_expandBtn);
   await $.pumpAndSettle();
+}
+
+// Opens UniChart on a fresh mock and seeds one long 75-lot position, whose
+// tag sits at the last price (see [openChartWithMockPosition]).
+Future<void> _openWithPosition(PatrolIntegrationTester $) async {
+  final mock = NxtChartRepository(storageKey: 'uni_chart');
+  await openChartAndAwaitLoad(
+    $,
+    interfaceOverride: mock,
+    cardTitle: 'UniChart',
+  );
+  mock.seedPosition();
 }
 
 // Opens [tooltip]'s options from the bar on its button's right edge.
@@ -166,6 +180,41 @@ void main() {
 
         expect(_collapseBtn, findsOneWidget);
         expect(find.byTooltip(_linesTooltip), findsOneWidget);
+      });
+    });
+
+    // UniChart opens no SDK pads: each action reaches the host's on*
+    // callback, which the example reports in a snackbar.
+    group('host callbacks', () {
+      patrolTest('exiting a position is a host market order', ($) async {
+        await _openWithPosition($);
+        final tag = find.byKey(Key(ChartTestKeys.positionTag(positionId)));
+        await waitUntilPresent($, tag);
+        await $.tester.tap(
+          find
+              .descendant(of: tag, matching: find.byType(GestureDetector))
+              .first,
+        );
+        await $.pumpAndSettle();
+
+        await $.tester.tap(
+          find.byKey(Key(ChartTestKeys.positionExitBtn(positionId))),
+        );
+        await $.pumpAndSettle();
+
+        expect(find.text('onTrade: Sell market qty 75 normal'), findsOneWidget);
+      });
+
+      patrolTest('dragging a position SL is a host stop order', ($) async {
+        await _openWithPosition($);
+
+        await dragPositionHandle($, isSL: true);
+
+        expect(
+          find.textContaining('onTrade: Sell stopmarket @'),
+          findsOneWidget,
+        );
+        expect($(Key(ChartTestKeys.errorState)), findsNothing);
       });
     });
   });
