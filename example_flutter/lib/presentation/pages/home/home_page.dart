@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
+import 'package:neocharts_exampleapp/presentation/pages/charts/uni_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/benchmark_control_panel.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/interface.dart';
+import 'package:nxtchart/widgets.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -17,11 +19,15 @@ class HomePage extends StatefulWidget {
   /// end-user usage, where each chart open gets its own fresh instance.
   final ChartInterface? interfaceOverride;
 
+  /// Test-only, see [ChartTemplateApp.widgetOverrides].
+  final NeoChartWidgetOverrides? widgetOverrides;
+
   const HomePage({
     super.key,
     required this.onToggleTheme,
     required this.isDark,
     this.interfaceOverride,
+    this.widgetOverrides,
   });
 
   @override
@@ -193,6 +199,27 @@ class _HomePageState extends State<HomePage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => NxtScalperChartScreen(
+                                      dataProvider: _resolveInterface(),
+                                      widgetOverrides: widget.widgetOverrides,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            ChartCard(
+                              title: 'UniChart',
+                              subtitle: 'Single chart with Buy / Sell',
+                              icon: Icons.candlestick_chart_rounded,
+                              gradient: const [
+                                Color(0xFF7C5CFF),
+                                Color(0xFF4B8BFF),
+                              ],
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UniChartScreen(
                                       dataProvider: _resolveInterface(),
                                     ),
                                   ),
