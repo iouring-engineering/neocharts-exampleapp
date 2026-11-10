@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -11,7 +11,7 @@ import 'performance_test_helpers.dart';
 // Perf — positions list
 //
 // Seeds a large number of distinct option positions via
-// NxtChartRepository.seedPositions (a test-only bulk hook -- each row uses
+// NeoChartsRepository.seedPositions (a test-only bulk hook -- each row uses
 // a different option-chain symbol, unlike looping seedPosition, which is
 // always NIFTY and would collide on the same list-item key) and measures
 // opening and scrolling the positions panel under that load. 100 is
@@ -25,8 +25,8 @@ void main() {
     patrolTest('opening the positions panel stays within 60 fps budget', (
       $,
     ) async {
-      final mock = NxtChartRepository(storageKey: 'perf_positions_open');
-      await openChartAndAwaitLoad($, interfaceOverride: mock);
+      final mock = NeoChartsRepository(storageKey: 'perf_positions_open');
+      await openChartAndAwaitLoad($, hostOverride: mock);
       mock.seedPositions(_positionCount);
       await awaitPerfOverlay($);
 
@@ -46,8 +46,8 @@ void main() {
     patrolTest('scrolling the positions list stays within 60 fps budget', (
       $,
     ) async {
-      final mock = NxtChartRepository(storageKey: 'perf_positions_scroll');
-      await openChartAndAwaitLoad($, interfaceOverride: mock);
+      final mock = NeoChartsRepository(storageKey: 'perf_positions_scroll');
+      await openChartAndAwaitLoad($, hostOverride: mock);
       mock.seedPositions(_positionCount);
       await awaitPerfOverlay($);
 

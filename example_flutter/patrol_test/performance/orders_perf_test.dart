@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -10,7 +10,7 @@ import 'performance_test_helpers.dart';
 
 // Perf — orders list
 //
-// Seeds a large number of open orders via NxtChartRepository.seedOrders (a
+// Seeds a large number of open orders via NeoChartsRepository.seedOrders (a
 // test-only bulk hook -- placeOrder routes every call through the
 // fill/position pipeline, which isn't needed here) and measures opening
 // and scrolling the orders panel under that load. Individual order rows
@@ -24,8 +24,8 @@ void main() {
     patrolTest('opening the orders panel stays within 60 fps budget', (
       $,
     ) async {
-      final mock = NxtChartRepository(storageKey: 'perf_orders_open');
-      await openChartAndAwaitLoad($, interfaceOverride: mock);
+      final mock = NeoChartsRepository(storageKey: 'perf_orders_open');
+      await openChartAndAwaitLoad($, hostOverride: mock);
       mock.seedOrders(_orderCount);
       await awaitPerfOverlay($);
 
@@ -43,8 +43,8 @@ void main() {
     patrolTest('scrolling the orders list stays within 60 fps budget', (
       $,
     ) async {
-      final mock = NxtChartRepository(storageKey: 'perf_orders_scroll');
-      await openChartAndAwaitLoad($, interfaceOverride: mock);
+      final mock = NeoChartsRepository(storageKey: 'perf_orders_scroll');
+      await openChartAndAwaitLoad($, hostOverride: mock);
       mock.seedOrders(_orderCount);
       await awaitPerfOverlay($);
 

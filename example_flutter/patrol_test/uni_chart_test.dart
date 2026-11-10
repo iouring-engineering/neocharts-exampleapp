@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/src/enums/chart_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
@@ -8,7 +8,7 @@ import 'package:patrol/patrol.dart';
 import 'helpers.dart';
 import 'positions/positions_test_helpers.dart';
 
-// UniChart (`NxtChartPage.uni`): one chart under a compact toolbar, with a
+// UniChart (`NeoChartPage.uni`): one chart under a compact toolbar, with a
 // collapsible drawing rail floating over it, opened here from its home card
 // (UniChartScreen: symbol app bar + Buy / Sell bar).
 
@@ -27,12 +27,8 @@ Future<void> _expandRail(PatrolIntegrationTester $) async {
 // Opens UniChart on a fresh mock and seeds one long 75-lot position, whose
 // tag sits at the last price (see [openChartWithMockPosition]).
 Future<void> _openWithPosition(PatrolIntegrationTester $) async {
-  final mock = NxtChartRepository(storageKey: 'uni_chart');
-  await openChartAndAwaitLoad(
-    $,
-    interfaceOverride: mock,
-    cardTitle: 'UniChart',
-  );
+  final mock = NeoChartsRepository(storageKey: 'uni_chart');
+  await openChartAndAwaitLoad($, hostOverride: mock, cardTitle: 'UniChart');
   mock.seedPosition();
 }
 
@@ -49,7 +45,7 @@ void main() {
     ) async {
       await openUniChartAndAwaitLoad($);
 
-      expect(find.text('DRREDDY'), findsOneWidget);
+      expect(find.text('NIFTY'), findsOneWidget);
       expect(find.text('Buy'), findsOneWidget);
       expect(find.text('Sell'), findsOneWidget);
       expect(
@@ -120,7 +116,7 @@ void main() {
         await _expandRail($);
 
         // The app bar's symbol title is well outside the rail.
-        await $.tester.tap(find.text('DRREDDY'));
+        await $.tester.tap(find.text('NIFTY'));
         await $.pumpAndSettle();
 
         expect(_collapseBtn, findsNothing);

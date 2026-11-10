@@ -4,19 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NxtChart — JS host demo</title>
+    <title>NeoCharts — JS host demo</title>
   </head>
   <body>
     <div id="root"></div>
+    <!-- The NeoCharts loader: a classic script (never defer/module), or it
+         throws at load time. Base URL is VITE_SDK_ASSET_BASE (see .env) --
+         `npm run dev` points it at /build_web/, a symlink to the SDK's
+         `build/web`; `npm run build` uses the CDN. Loading it before the
+         module script below guarantees `window.neoCharts` exists by mount. -->
+    <script src="%VITE_SDK_ASSET_BASE%neocharts.js"></script>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Exposes the `_flutter.loader` global that ChartMount uses to boot
-         the SDK's compiled web bundle. Base URL is VITE_SDK_ASSET_BASE (see
-         .env) -- defaults to /build_web/, a symlink to ../../../build/web
-         populated by `fvm flutter build web` for local/CI builds (a plain
-         "../../build/web" relative path breaks under Vite's dev server,
-         which serves this app's own directory as its root, not the repo
-         root). Override VITE_SDK_ASSET_BASE at build time to load the
-         bundle from a CDN instead. -->
-    <script src="%VITE_SDK_ASSET_BASE%flutter.js" defer></script>
   </body>
 </html>

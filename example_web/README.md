@@ -1,7 +1,8 @@
 # NeoCharts — Web Example
 
-Demonstrates the **pre-built bundle** integration style: `window.NxtChartHost` implemented
-in TypeScript, driving the compiled web bundle straight into the Terminal.
+Demonstrates the **pre-built bundle** integration style: a host object implemented in
+TypeScript and mounted with `neoCharts.mount(element, host)`, driving the compiled web
+bundle straight into the Terminal.
 
 ## Run it
 
@@ -10,19 +11,32 @@ npm install
 npm run dev
 ```
 
-`src/nxtChartHost.ts` is the reference `NxtChartHost` implementation — real, working mock
-data, not just a stub.
+`npm run dev` loads the SDK web bundle from `/build_web/`, a symlink to the SDK's
+`build/web`, so build the bundle first, from the SDK root:
+
+```bash
+fvm flutter build web --target=lib/main_web.dart --no-web-resources-cdn
+```
+
+(Make sure `neocharts_core.wasm` is in the build's `assets/`.)
+
+`src/neoChartsHost.ts` is the reference host (`createHost(element)`, typed by the vendored
+`src/neocharts-host.d.ts`) — real, working mock data, not just a stub. It implements every
+optional group (OCO, alerts, OI, intraday, funds, top options, close).
 
 ## SDK bundle source
 
 `VITE_SDK_ASSET_BASE` controls where the compiled SDK web bundle
-(`flutter.js`, `main.dart.js`, `assets/`) is loaded from:
+(`neocharts.js`, `main.dart.js`, `assets/`) is loaded from:
 
 | Command | Reads | Loads the SDK from |
 |---|---|---|
 | `npm run dev` | `.env.development` | `/build_web/`, a symlink to the sibling Flutter build output |
 | `npm run dev -- --mode cdn` | `.env` | the CDN |
 | `npm run build` | `.env` | the CDN |
+
+CDN mode (`--mode cdn`, `npm run build`) needs a CDN release that ships
+`neocharts.js`; until the `.env` version has one, those pages stay blank.
 
 Each SDK release has its own CDN folder,
 `https://cdn.nxtoption.com/neocharts-sdk/<version>/`. `.env` holds the current

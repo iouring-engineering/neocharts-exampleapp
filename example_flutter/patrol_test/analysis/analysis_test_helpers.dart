@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/enums/oi_change_interval.dart';
 import 'package:nxtchart/src/enums/pcr_range.dart';
@@ -11,8 +11,8 @@ import '../helpers.dart';
 // Shared setup/finder helpers for the Analysis Patrol suite (tabs, PCR, OI
 // Analysis, OI Change, ATM Straddle, ATM IV, Price).
 //
-// Runs against NxtChartRepository, the app's own default -- no
-// interfaceOverride needed here (unlike positions/alerts), since no
+// Runs against NeoChartsRepository, the app's own default -- no
+// hostOverride needed here (unlike positions/alerts), since no
 // per-test seeding is required: every analysis fetch (fetchPcrIntraday,
 // fetchAtmStraddleIntraday, fetchAtmIvIntraday, fetchOIAnalysis,
 // fetchOIChange) plus loadData/optionSymbols (which the price chart and
@@ -61,7 +61,7 @@ Future<void> openAnalysisTab(
 
 // The OI Analysis/OI Change expiry dropdown's own overlay rows are keyed
 // by the exact expiry date string, which is date-derived (relative to
-// "now" in NxtChartRepository.optionSymbols) -- there's no fixed literal
+// "now" in NeoChartsRepository.optionSymbols) -- there's no fixed literal
 // to key a *specific* expiry off, so helpers.dart's findByKeyPrefix is used
 // instead; there's only ever one expiry dropdown open at a time in these
 // tests, so matching any option by prefix is unambiguous.

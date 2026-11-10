@@ -8,8 +8,8 @@
 
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
@@ -26,12 +26,7 @@ import 'helpers.dart';
 // openChartAndAwaitLoad (which opens the chart in one shot).
 Future<void> _pumpHomeAndAwaitReady(PatrolIntegrationTester $) async {
   final completer = Completer<void>();
-  await $.pumpWidget(
-    ChartTemplateApp(
-      onInitDone: completer.complete,
-      onInitError: completer.completeError,
-    ),
-  );
+  await $.pumpWidget(ChartTemplateApp(onInitDone: completer.complete));
   await completer.future;
   await $.tester.pump(const Duration(milliseconds: 300));
   // find.text('NeoCharts') alone is ambiguous -- the home page's own

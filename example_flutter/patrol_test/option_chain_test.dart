@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -9,7 +9,7 @@ import 'helpers.dart';
 // it uses its own openOptionChain/closeOptionChain helpers rather than the
 // drawer-tab open/close pattern used elsewhere in this suite.
 //
-// NxtChartRepository's option-chain data already provides the full CE/PE
+// NeoChartsRepository's option-chain data already provides the full CE/PE
 // chain (multiple strikes across weekly expiries) for structure/expiry-
 // dropdown purposes, and a live tick for each strike's own ltp/OI/greeks --
 // so every column (including the Greeks-only ones) renders real data once a

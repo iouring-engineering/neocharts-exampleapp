@@ -1,2 +1,3 @@
 ${PODS_ROOT}/Target Support Files/Pods-example_ios/Pods-example_ios-frameworks.sh
+${BUILT_PRODUCTS_DIR}/package_info_plus/package_info_plus.framework
 ${BUILT_PRODUCTS_DIR}/shared_preferences_foundation/shared_preferences_foundation.framework

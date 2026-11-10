@@ -1,0 +1,86 @@
+{
+  "storageKey": "example",
+  "initialSymbolId": "NIFTY",
+  "isMarketOrderSupported": true,
+  "productTypes": {
+    "EQ": {
+      "values": [
+        "intraday",
+        "delivery"
+      ],
+      "default": "intraday"
+    },
+    "FUT": {
+      "values": [
+        "intraday",
+        "normal"
+      ],
+      "default": "intraday"
+    },
+    "OPT": {
+      "values": [
+        "intraday",
+        "normal"
+      ],
+      "default": "intraday"
+    }
+  },
+  "marketTimings": {
+    "NSE": {
+      "timezone": "Asia/Kolkata",
+      "sessions": [
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ]
+      ],
+      "holidays": [],
+      "special": {}
+    },
+    "BSE": {
+      "timezone": "Asia/Kolkata",
+      "sessions": [
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ],
+        [
+          "0000-2359"
+        ]
+      ],
+      "holidays": [],
+      "special": {}
+    }
+  }
+}

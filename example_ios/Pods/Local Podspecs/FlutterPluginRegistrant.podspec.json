@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "Flutter": [],
+    "package_info_plus": [],
     "shared_preferences_foundation": []
   }
 }

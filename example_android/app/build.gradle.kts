@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// The NeoCharts licence home key, from the untracked local.properties
+// (`neocharts.homeKey=...`); blank means no key, and the licence error shows.
+val neochartsHomeKey: String = Properties().run {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    getProperty("neocharts.homeKey", "").trim()
 }
 
 android {
@@ -16,6 +25,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "NEOCHARTS_HOME_KEY",
+            "\"" + neochartsHomeKey.replace("\\", "\\\\").replace("\"", "\\\"") + "\"",
+        )
     }
 
     buildTypes {
@@ -36,6 +51,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
 }
@@ -47,8 +63,8 @@ kotlin {
 }
 
 dependencies {
-    // NxtChart SDK (built AAR)
-    implementation("com.iouring.nxtchart:flutter_release:1.0")
+    // NeoCharts SDK (built AAR)
+    implementation("com.iouring.neocharts:flutter_release:1.0")
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
@@ -59,6 +75,8 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // A real org.json for JVM tests; android.jar's is a stub there.
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit.v115)
     androidTestImplementation(libs.androidx.espresso.core.v351)
 

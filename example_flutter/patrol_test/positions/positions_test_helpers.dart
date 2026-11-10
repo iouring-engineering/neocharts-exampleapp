@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -11,7 +11,7 @@ import '../helpers.dart';
 // group_adjust entirely -- that's a distinct, option-chain-driven
 // multi-position flow, covered separately under group_adjust/.
 //
-// Runs against NxtChartRepository, which already supports positions
+// Runs against NeoChartsRepository, which already supports positions
 // (seedPosition/positionsStreamer). Live data stays on (the default) --
 // none of add/adjust/exit's validation has an LTP-boundary check to work
 // around by turning ticks off (only OCO's SL/TP-vs-LTP check does, and
@@ -23,18 +23,18 @@ import '../helpers.dart';
 
 const positionId = 'NIFTY_normal';
 
-// Pumps the app against a fresh NxtChartRepository, opens the chart, then
+// Pumps the app against a fresh NeoChartsRepository, opens the chart, then
 // seeds one open long position. seedPosition's own avgPrice defaults to
 // the repository's current last price when none is given, so the
 // position's on-chart marker (relevant to the drag test in this folder) is
 // always built somewhere within the visible y-axis range.
-Future<NxtChartRepository> openChartWithMockPosition(
+Future<NeoChartsRepository> openChartWithMockPosition(
   PatrolIntegrationTester $, {
   int netQty = 75,
   double? avgPrice,
 }) async {
-  final mock = NxtChartRepository(storageKey: 'scalper_chart');
-  await openChartAndAwaitLoad($, interfaceOverride: mock);
+  final mock = NeoChartsRepository();
+  await openChartAndAwaitLoad($, hostOverride: mock);
   mock.seedPosition(netQty: netQty, avgPrice: avgPrice);
   return mock;
 }

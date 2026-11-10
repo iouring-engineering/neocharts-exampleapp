@@ -1,13 +1,13 @@
 // apps/example_web/src/mockDataSource.ts
 //
-// Reads the shared fixture (bundled as public/{symbols,oi,orders,positions,
-// oco_orders}.json, symlinked from apps/mock/) and serves it as plain reads,
-// plus this platform's own native live-tick and candle-walk generation
-// widened to every symbol in the fixture.
+// Mock data for neoChartsHost.ts: reads the shared fixture (bundled as
+// public/{symbols,oi,orders,positions,oco_orders,session}.json, symlinked
+// from apps/mock/) and generates ticks and candles for every symbol in it.
 
 interface SymbolInfo {
   id: string
   name: string
+  segment?: string
   // Omitted for non-tradable index symbols (see indexSymbols in the
   // fixture) -- there's no lot to trade.
   lotSize?: number
@@ -20,25 +20,19 @@ interface SymbolInfo {
   weekly?: 'Y' | 'N'
   // Underlying symbol id -- e.g. "NIFTY" on a NIFTY option/future, "BANKNIFTY"
   // on a BANKNIFTY one. Omitted on the underlying itself (an index or
-  // equity). The Dart SDK's JsChartInterface uses this to scope
-  // optionSymbols/futureSymbols to whichever underlying is currently
-  // charted, out of this fixture's full multi-underlying universe.
+  // equity). `optionChain`/`futures`/`underlyingOf` use this to scope
+  // optionChain/futures to whichever underlying is being asked about.
   undID?: string
 }
 
-interface Fixture {
-  niftySymbol: SymbolInfo
-  optionChain: SymbolInfo[]
-  futureSymbols: SymbolInfo[]
-  indexSymbols: SymbolInfo[]
-  equitySymbols: SymbolInfo[]
-  basePrices: Record<string, number>
-  topOptionsByVolume: {
-    symId: string
-    name: string
-    optType: string
-    exchange: string
-  }[]
+interface TopOption {
+  id: string
+  name: string
+  optType: string
+  exchange: string
+}
+
+interface UnderlyingAnalytics {
   oi: {
     byStrike: { calls: Record<string, number>; puts: Record<string, number> }
     changeByStrike: {
@@ -57,43 +51,64 @@ interface Fixture {
   }[]
   atmStraddleIntraday: Record<string, { offsetMinutes: number; atmStraddlePrice: number }[]>
   atmIvIntraday: { offsetMinutes: number; atmIv: number }[]
+}
+
+/** `session.json`'s shape; `init()` adds `initialSymbol` and `indexSymbols`. */
+interface SessionFixture {
+  storageKey: string
+  initialSymbolId: string
+  isMarketOrderSupported?: boolean
+  productTypes?: Record<string, { values: string[]; default: string }>
+  marketTimings: Record<string, unknown>
+}
+
+interface Fixture {
+  optionChain: SymbolInfo[]
+  futureSymbols: SymbolInfo[]
+  indexSymbols: SymbolInfo[]
+  equitySymbols: SymbolInfo[]
+  basePrices: Record<string, number>
+  topOptionsByUnderlying: Record<string, TopOption[]>
   seedOrders: Record<string, unknown>[]
   seedPositions: Record<string, unknown>[]
   seedOcoOrders: Record<string, unknown>[]
 }
 
 const REQUIRED_KEYS: (keyof Fixture)[] = [
-  'niftySymbol',
   'optionChain',
   'futureSymbols',
   'indexSymbols',
   'equitySymbols',
   'basePrices',
-  'topOptionsByVolume',
-  'oi',
-  'pcrIntraday',
-  'atmStraddleIntraday',
-  'atmIvIntraday',
+  'topOptionsByUnderlying',
   'seedOrders',
   'seedPositions',
   'seedOcoOrders',
 ]
 
 let fixture: Fixture | null = null
+let analytics: Record<string, UnderlyingAnalytics> | null = null
+let session: SessionFixture | null = null
 
-const FIXTURE_FILES = ['symbols', 'oi', 'orders', 'positions', 'oco_orders']
+const FIXTURE_FILES = ['symbols', 'orders', 'positions', 'oco_orders']
+
+async function fetchJson<T>(name: string): Promise<T> {
+  const response = await fetch(`/${name}.json`)
+  // Check before parsing: a miss can come back as a real 404 whose body
+  // still JSON-parses into something confusing, or as the SPA's index.html.
+  if (!response.ok) {
+    throw new Error(`Failed to load ${name}.json: HTTP ${response.status}`)
+  }
+  return (await response.json()) as T
+}
 
 export async function loadMockData(): Promise<void> {
   const json = {} as Fixture
   for (const name of FIXTURE_FILES) {
-    const response = await fetch(`/${name}.json`)
-    // Check before parsing: a miss can come back as a real 404 whose body
-    // still JSON-parses into something confusing, or as the SPA's index.html.
-    if (!response.ok) {
-      throw new Error(`Failed to load ${name}.json: HTTP ${response.status}`)
-    }
-    Object.assign(json, await response.json())
+    Object.assign(json, await fetchJson<object>(name))
   }
+  analytics = await fetchJson<Record<string, UnderlyingAnalytics>>('oi')
+  session = await fetchJson<SessionFixture>('session')
   for (const key of REQUIRED_KEYS) {
     if (!(key in json)) throw new Error(`mock fixture is missing required key: ${key}`)
   }
@@ -139,6 +154,11 @@ function addWebOnlyBankex(json: Fixture): void {
       : indexLevel
     ;(src.optType ? json.optionChain : json.futureSymbols).push(dst)
   }
+}
+
+function analyticsFor(underlyingId: string): UnderlyingAnalytics | undefined {
+  data()
+  return analytics?.[underlyingId]
 }
 
 function data(): Fixture {
@@ -207,7 +227,7 @@ function pad2(n: number): string {
 
 // "dd-MM-yyyy HH:mm:ss" -- matches lib/src/extensions/string_x.dart's
 // formatTime() parser, not ISO-8601 (see trade_interface.dart's ordTime doc).
-function formatOrdTime(offsetMinutes: number): string {
+export function formatOrdTime(offsetMinutes: number): string {
   const d = new Date(Date.now() - offsetMinutes * 60_000)
   return (
     `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()} ` +
@@ -219,90 +239,25 @@ function formatOrdTime(offsetMinutes: number): string {
 // Static fixture reads
 // -------------------------------------------------------------------------
 
-export function symbolInfoJson(): string {
-  return JSON.stringify(data().niftySymbol)
+/**
+ * The `init()` session: `session.json` plus the resolved initial symbol and
+ * the index symbols.
+ */
+export function sessionJson(): string {
+  const { indexSymbols } = data()
+  const { initialSymbolId, ...rest } = session as SessionFixture
+  const initialSymbol = anySymbolByID(initialSymbolId)
+  if (!initialSymbol) throw new Error(`session.json: unknown initialSymbolId ${initialSymbolId}`)
+  return JSON.stringify({ ...rest, initialSymbol, indexSymbols })
 }
-export function optionSymbolsJson(): string {
-  return JSON.stringify(data().optionChain)
-}
-// Unlike the bare chain `optionSymbols` returns, `fetchOptionDetails` requires
-// the underlying's own symbol info as the first element (the one entry without
-// an `optType`) so the chart can resolve the spot price -- see
-// MKTDataInterface.fetchOptionDetails.
-export function fetchOptionDetailsJson(): string {
-  return JSON.stringify([data().niftySymbol, ...data().optionChain])
-}
-export function futureSymbolsJson(): string {
-  return JSON.stringify(data().futureSymbols)
-}
-export function indexSymbolsJson(): string {
-  return JSON.stringify(data().indexSymbols)
-}
-
-// `sessions` is an array indexed by weekday (0 = Monday ... 6 = Sunday), each
-// entry an array of "HHMM-HHMM" ranges and an empty array for a non-trading
-// day -- see MarketTiming.fromJson in lib/src/models/market_timing.dart.
-// Open every hour of every day -- a real exchange trades ~6h on weekdays
-// only, but this is a demo: it should show live movement no matter when
-// someone runs it, not just 09:15-15:30 IST on a weekday.
-export function marketTimingsJson(): string {
-  const sessions = Array.from({ length: 7 }, () => ['0000-2359'])
-  return JSON.stringify({
-    NSE: { timezone: 'Asia/Kolkata', sessions, holidays: [], special: {} },
-  })
-}
-
-export function chartTopOptionsJson(): string {
-  return JSON.stringify(data().topOptionsByVolume)
-}
-
-// Keyed by underlying id, one [ceSymbolInfo, peSymbolInfo] pair (or null,
-// if that underlying has no option chain) per entry -- NOT the bare
-// [ce, pe] pair MKTDataInterface.atmSymbols (lib/src/interface/
-// market_data_interface.dart) itself documents, since this function has
-// no notion of "which underlying is currently charted" (window.
-// NxtChartHost is one global object, not scoped per JsChartInterface
-// instance). JsChartInterface.atmSymbols picks its own current
-// underlying's pair back out of this and re-encodes it as the documented
-// bare-pair shape, so nothing above that layer (chart_layout_preset.dart,
-// docs, real hosts on other platforms) sees this indirection.
-export function atmSymbolsJson(): string {
-  const result: Record<string, [SymbolInfo, SymbolInfo] | null> = {}
-  for (const underlying of data().indexSymbols) {
-    const base = data().basePrices[underlying.id] ?? 0
-    const chain = data().optionChain.filter((o) => o.undID === underlying.id)
-    if (chain.length === 0) {
-      result[underlying.id] = null
-      continue
-    }
-    const atmStrike = chain.reduce((closest, opt) =>
-      Math.abs(Number(opt.strike) - base) < Math.abs(Number(closest.strike) - base) ? opt : closest,
-    )
-    const call = chain.find((o) => o.strike === atmStrike.strike && o.optType === 'CE')
-    const put = chain.find((o) => o.strike === atmStrike.strike && o.optType === 'PE')
-    result[underlying.id] = call && put ? [call, put] : null
-  }
-  return JSON.stringify(result)
-}
-
-// -------------------------------------------------------------------------
-// Parameterized reads (`xxxFor`) -- the host-side scoping the Dart SDK's
-// `underlyingSymbolInfoFor`/`optionSymbolsFor`/etc. now delegate to,
-// instead of the ambient getters above plus JsChartInterface's own
-// client-side filtering. See MarketDataInterface's dartdoc on each
-// `xxxFor` member for the exact contract each of these implements.
-// -------------------------------------------------------------------------
 
 // The underlyings themselves -- entries with no `undID` of their own.
-// `equitySymbols` are included since an equity is its own underlying too,
-// even though this fixture's `optionChain` only has index derivatives.
 function underlyingCandidates(): SymbolInfo[] {
   return [...data().indexSymbols, ...data().equitySymbols]
 }
 
 // Any symbol in the fixture's full universe, by id -- unlike symbolByID
-// (tradable derivatives only), this also matches an underlying itself,
-// since underlyingSymbolInfoFor can be asked to resolve a spot/index id.
+// (tradable derivatives only), this also matches an underlying itself.
 function anySymbolByID(id: string): SymbolInfo | undefined {
   return [
     ...data().indexSymbols,
@@ -312,59 +267,71 @@ function anySymbolByID(id: string): SymbolInfo | undefined {
   ].find((s) => s.id === id)
 }
 
-export function underlyingSymbolInfoForJson(symbolId: string): string | null {
-  const symbol = anySymbolByID(symbolId)
-  if (!symbol?.undID) return null
-  const underlying = underlyingCandidates().find((s) => s.id === symbol.undID)
-  return underlying ? JSON.stringify(underlying) : null
+/** One symbol of the fixture's universe by id (`{id}` if unknown). */
+export function symbolOrStub(id: string): SymbolInfo {
+  return anySymbolByID(id) ?? ({ id } as SymbolInfo)
 }
 
-export function optionSymbolsForJson(underlyingId: string): string {
+/** Total: an underlying (or an unknown id) resolves to itself. */
+export function underlyingOfJson(symbolId: string): string {
+  const symbol = symbolOrStub(symbolId)
+  const underlying = symbol.undID
+    ? underlyingCandidates().find((s) => s.id === symbol.undID)
+    : undefined
+  return JSON.stringify(underlying ?? symbol)
+}
+
+export function optionChainJson(underlyingId: string): string {
   return JSON.stringify(data().optionChain.filter((s) => s.undID === underlyingId))
 }
 
-export function futureSymbolsForJson(underlyingId: string): string {
+export function futuresJson(underlyingId: string): string {
   return JSON.stringify(data().futureSymbols.filter((s) => s.undID === underlyingId))
 }
 
-export function atmSymbolsForJson(underlyingId: string): string | null {
-  const parsed = JSON.parse(atmSymbolsJson()) as Record<string, [SymbolInfo, SymbolInfo] | null>
-  const pair = parsed[underlyingId]
-  return pair ? JSON.stringify(pair) : null
+export function topOptionsJson(underlyingId: string): string {
+  return JSON.stringify(data().topOptionsByUnderlying[underlyingId] ?? [])
 }
 
-// `topOptionsByVolume` carries no `undID` of its own -- resolved through
-// each entry's matching `optionChain` symbol, which does.
-export function chartTopOptionsForJson(underlyingId: string): string {
-  const filtered = data().topOptionsByVolume.filter((top) => {
-    const match = data().optionChain.find((o) => o.id === top.symId)
-    return match?.undID === underlyingId
-  })
-  return JSON.stringify(filtered)
+// -------------------------------------------------------------------------
+// Margin and brokerage previews (the formulas every example app shares)
+// -------------------------------------------------------------------------
+
+// Malformed request JSON is "unpriceable", like any other bad input.
+function parseRequest(request: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(request) as Record<string, unknown>
+  } catch {
+    return null
+  }
 }
 
-// This fixture only models one underlying's worth of intraday OI-derived
-// history -- real per-underlying scoping isn't meaningfully demonstrable
-// with a single-series fixture, so these three ignore `underlyingId` and
-// return the same series [fetchPcrIntraday]/[fetchAtmStraddleIntraday]/
-// [fetchAtmIvIntraday] already did.
-export function fetchPcrIntradayForJson(_underlyingId: string): string {
-  return fetchPcrIntradayJson()
+/** Full order value, or 20% of it for intraday; null when unpriceable. */
+export function marginForJson(request: string): string | null {
+  const r = parseRequest(request)
+  if (!r) return null
+  const symbol = anySymbolByID(String(r.symbolId))
+  const lots = Number(r.lots)
+  const ltp = Number(r.ltp)
+  if (!symbol || !(lots > 0) || !(ltp > 0)) return null
+  const share = r.productType === 'intraday' ? 0.2 : 1.0
+  return String(lots * (symbol.lotSize ?? 1) * ltp * share)
 }
-export function fetchAtmStraddleIntradayForJson(_underlyingId: string): string {
-  return fetchAtmStraddleIntradayJson()
-}
-export function fetchAtmIvIntradayForJson(_underlyingId: string): string {
-  return fetchAtmIvIntradayJson()
+
+/** 0.03% of the order value, capped at 20; null when unpriceable. */
+export function brokerageForJson(request: string): string | null {
+  const r = parseRequest(request)
+  if (!r) return null
+  const quantity = Number(r.quantity)
+  const price = Number(r.price)
+  if (!anySymbolByID(String(r.symbolId)) || !(quantity > 0) || !(price > 0)) return null
+  return String(Math.min(quantity * price * 0.0003, 20))
 }
 
 export function searchSymbols(query: string): string {
   const keyword = query.trim().toLowerCase()
   if (!keyword) return JSON.stringify([])
 
-  // `niftySymbol` isn't listed separately here -- it's the same "NIFTY"
-  // entry `indexSymbols` already carries, and including both would show
-  // "NIFTY 50" twice in results.
   const universe = [
     ...data().optionChain,
     ...data().futureSymbols,
@@ -377,14 +344,17 @@ export function searchSymbols(query: string): string {
   return JSON.stringify(matches)
 }
 
-export function fetchOIAnalysisJson(): string {
-  return JSON.stringify(data().oi.analysisAroundAtm)
+export function oiAnalysisJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  return a ? JSON.stringify(a.oi.analysisAroundAtm) : null
 }
-export function fetchOIChangeJson(): string {
-  return JSON.stringify(data().oi.changeByStrike)
+export function oiChangeJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  return a ? JSON.stringify(a.oi.changeByStrike) : null
 }
-export function fetchOIJson(): string {
-  return JSON.stringify(data().oi.byStrike)
+export function oiJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  return a ? JSON.stringify(a.oi.byStrike) : null
 }
 
 function withResolvedTimes<T extends { offsetMinutes: number }>(
@@ -397,15 +367,19 @@ function withResolvedTimes<T extends { offsetMinutes: number }>(
   }))
 }
 
-export function fetchPcrIntradayJson(): string {
-  return JSON.stringify(withResolvedTimes(data().pcrIntraday))
+export function pcrIntradayJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  return a ? JSON.stringify(withResolvedTimes(a.pcrIntraday)) : null
 }
-export function fetchAtmIvIntradayJson(): string {
-  return JSON.stringify(withResolvedTimes(data().atmIvIntraday))
+export function atmIvIntradayJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  return a ? JSON.stringify(withResolvedTimes(a.atmIvIntraday)) : null
 }
-export function fetchAtmStraddleIntradayJson(): string {
+export function atmStraddleIntradayJson(underlyingId: string): string | null {
+  const a = analyticsFor(underlyingId)
+  if (!a) return null
   const resolved: Record<string, unknown> = {}
-  for (const [expiry, rows] of Object.entries(data().atmStraddleIntraday)) {
+  for (const [expiry, rows] of Object.entries(a.atmStraddleIntraday)) {
     resolved[expiry] = withResolvedTimes(rows)
   }
   return JSON.stringify(resolved)
@@ -441,24 +415,36 @@ export const placedOrder = (orderID: string, p: Record<string, unknown>) => ({
   orderAction: p.orderAction ?? 'buy',
   productType: p.productType ?? 'normal',
   avgPrice: p.price ?? 0,
+  price: p.orderType === 'market' ? priceOf(p.symID as string) : (p.price ?? 0),
   netQty: p.qty ?? 0,
   fillQty: 0,
   orderStatus: 'open',
   triggerPrice: p.triggerPrice ?? 0,
   ordTime: formatOrdTime(0),
 })
-// `pnl`/`unrealizedPL`/`mtm` are display-only computed values a real host
-// derives from the live price, so the fixture's schema doesn't carry them --
-// synthesize them here, same as `symbol`.
+// `pnl`/`unrealizedPL`/`mtm` are display-only values a real host derives
+// from the live price, so the fixture doesn't carry them; the host fills
+// them in per tick (see `positionPnl`).
 export const seedPositions = () =>
   data().seedPositions.map((p) => ({
     ...p,
     symbol: symbolByID(p.symID as string),
-    pnl: 250.0,
-    unrealizedPL: 250.0,
-    mtm: 250.0,
+    pnl: 0,
+    unrealizedPL: 0,
+    mtm: 0,
   }))
-// Copy each row: nxtChartHost's placeOCOOrder pushes onto whatever this
+
+/** The current mock price of a symbol: the same curve ticks and bars use. */
+export function priceOf(symbolId: string): number {
+  return priceAt(symbolId, Date.now())
+}
+
+/** Unrealised P&L of a position row at the current mock price. */
+export function positionPnl(position: Record<string, unknown>): number {
+  const diff = priceOf(position.symID as string) - Number(position.avgPrice)
+  return Math.round(diff * Number(position.netQty) * 100) / 100
+}
+// Copy each row: the host's placeOcoOrder pushes onto whatever this
 // returns, which would otherwise mutate the cached fixture in place.
 export const seedOcoOrders = () => data().seedOcoOrders.map((o) => ({ ...o }))
 
@@ -473,30 +459,32 @@ export function makeBars(
   symbolId: string,
 ): number[][] {
   const bars: number[][] = []
+  // Bar times sit on the interval grid, so repeated loads line up.
+  const last = Math.floor(to / intervalMs) * intervalMs
   for (let i = count - 1; i >= 0; i--) {
-    const ts = to - i * intervalMs
+    const ts = last - i * intervalMs
     // Sampling the same continuous curve at each bar's start/end keeps
     // consecutive bars connected (this bar's close === the next bar's
-    // open) without carrying mutable state across calls.
+    // open) without carrying mutable state across calls. High and low are
+    // the extremes of the curve inside the bar; volume is seeded per bar.
     const open = priceAt(symbolId, ts)
     const close = priceAt(symbolId, ts + intervalMs)
-    const high = Math.max(open, close) + Math.random() * (open * 0.001)
-    const low = Math.max(0.5, Math.min(open, close) - Math.random() * (open * 0.001))
-    const volume = 1000 + Math.floor(Math.random() * 5000)
+    let high = Math.max(open, close)
+    let low = Math.min(open, close)
+    for (const part of [0.25, 0.5, 0.75]) {
+      const p = priceAt(symbolId, ts + intervalMs * part)
+      high = Math.max(high, p)
+      low = Math.min(low, p)
+    }
+    const volume = 1000 + Math.floor(seededUnit(`${symbolId}:vol:${ts}`) * 5000)
     bars.push([ts, open, high, low, close, volume])
   }
   return bars
 }
 
-/** One tick per symbol: every index (spot included), option, future, and equity -- matching MockChartDataSource.generateTicks()'s breadth. */
-export function nextTicks(): Record<string, unknown>[] {
-  const f = data()
-  const ticks: Record<string, unknown>[] = []
-  for (const index of f.indexSymbols) ticks.push(tickFor(index.id))
-  for (const option of f.optionChain) ticks.push(tickFor(option.id))
-  for (const future of f.futureSymbols) ticks.push(tickFor(future.id))
-  for (const equity of f.equitySymbols) ticks.push(tickFor(equity.id))
-  return ticks
+/** One tick, with its depth fields, per subscribed symbol id. */
+export function nextTicks(symbolIds: Iterable<string>): Record<string, unknown>[] {
+  return [...symbolIds].map((id) => ({ ...tickFor(id), ...depthFor(id) }))
 }
 
 function tickFor(symbolId: string): Record<string, unknown> {
@@ -568,7 +556,7 @@ function depthSide(
 /** Order-book fields for one symbol, merged onto its `marketDataStreamer`
  * tick. Each call is an independent full snapshot (no deltas); `symbolId`,
  * `vol` and `ltt` are left to the tick itself. */
-export function depthFor(symbolId: string): Record<string, unknown> {
+function depthFor(symbolId: string): Record<string, unknown> {
   const base = data().basePrices[symbolId] ?? 22600
   const tick = tickSizeFor(symbolId)
   const ltp = roundToTick(
@@ -621,19 +609,21 @@ function optionOiFields(symbolId: string): Record<string, unknown> {
 
   const strike = Number(option.strike)
   const side = option.optType === 'CE' ? 'calls' : 'puts'
-  const { byStrike, changeByStrike } = data().oi
-  const atm = data().basePrices[data().niftySymbol.id] ?? 22600
+  const oi = analyticsFor(option.undID ?? '')?.oi
+  const byStrike = oi?.byStrike ?? { calls: {}, puts: {} }
+  const changeByStrike = oi?.changeByStrike ?? { calls: {}, puts: {} }
+  const atm = data().basePrices[option.undID ?? ''] ?? 22600
   const fallback = Math.round(
     120_000 * Math.exp(-(((strike - atm) / 400) ** 2)) + 20_000,
   )
   const baseOi = byStrike[side][option.strike] ?? fallback
-  const oi = Math.round(baseOi * (1 + (Math.random() - 0.5) * 0.01))
+  const liveOi = Math.round(baseOi * (1 + (Math.random() - 0.5) * 0.01))
   const magnitude = changeByStrike[side][option.strike] ?? Math.round(baseOi * 0.03)
   const oiChng = (strike / 50) % 3 === 0 ? -magnitude : magnitude
-  const prevOi = oi - oiChng
+  const prevOi = liveOi - oiChng
 
   return {
-    OI: oi,
+    OI: liveOi,
     oiChng,
     oiChngPer: prevOi > 0 ? Math.round((oiChng / prevOi) * 10000) / 100 : 0,
     vol: Math.round(baseOi * 0.4 * (1 + Math.random() * 0.05)),

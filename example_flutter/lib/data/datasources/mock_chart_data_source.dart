@@ -2,26 +2,103 @@ import 'dart:math';
 
 import 'package:neocharts_exampleapp/utils/formatting.dart';
 
-/// Generates the synthetic NIFTY option-chain market data consumed by
-/// [NxtChartRepository] (in `../repositories/nxt_chart_repository.dart`).
+/// NIFTY's live-tick band floor; other underlyings scale their bands off it.
+const double _niftyBandLow = 22100.0;
+
+/// An underlying with an option chain and one future. Its price bands are
+/// NIFTY's, scaled by [scale].
+class _Underlying {
+  const _Underlying({
+    required this.id,
+    required this.name,
+    required this.lotSize,
+    required this.contractLotSize,
+    required this.bandLow,
+    required this.firstStrike,
+    required this.strikeStep,
+    required this.strikeCount,
+  });
+
+  final String id;
+  final String name;
+  final int lotSize;
+  final int contractLotSize;
+  final double bandLow;
+  final int firstStrike;
+  final int strikeStep;
+  final int strikeCount;
+
+  double get scale => bandLow / _niftyBandLow;
+
+  List<int> get strikes => [
+    for (var i = 0; i < strikeCount; i++) firstStrike + i * strikeStep,
+  ];
+}
+
+enum _Kind { spot, future, option, other }
+
+const _underlyings = [
+  _Underlying(
+    id: 'NIFTY',
+    name: 'NIFTY 50',
+    lotSize: MockChartDataSource.lotSize,
+    contractLotSize: MockChartDataSource.lotSize,
+    bandLow: _niftyBandLow,
+    firstStrike: 22000,
+    strikeStep: 50,
+    strikeCount: 55,
+  ),
+  _Underlying(
+    id: 'BANKNIFTY',
+    name: 'BANKNIFTY',
+    lotSize: 30,
+    contractLotSize: 30,
+    bandLow: 48200,
+    firstStrike: 47250,
+    strikeStep: 100,
+    strikeCount: 21,
+  ),
+  _Underlying(
+    id: 'RELIANCE',
+    name: 'Reliance Industries',
+    lotSize: 1,
+    contractLotSize: 500,
+    bandLow: 2930,
+    firstStrike: 2800,
+    strikeStep: 20,
+    strikeCount: 15,
+  ),
+];
+
+/// Generates the synthetic NIFTY, BANKNIFTY and RELIANCE market data
+/// consumed by `NeoChartsRepository`.
 ///
 /// This is the app's mock "API" — everything here is fabricated (symbols,
 /// candles, ticks, open interest). It knows nothing about orders, positions,
-/// alerts or the streaming/interface glue that adapts it to the chart SDK;
-/// that lives entirely in the repository.
+/// alerts or the SDK contract; that lives entirely in the repository.
 class MockChartDataSource {
   MockChartDataSource() {
-    optionChain = _generateOptionChain();
+    final expiry = nearestExpiry();
+
+    for (final und in _underlyings) {
+      _underlyingById[und.id] = und;
+      _chains[und.id] = _generateOptionChain(und, expiry);
+      _futures[und.id] = [_future(und, expiry)];
+    }
 
     allSymbols = [
-      niftySymbol,
-      ...optionChain,
-      ...generateFutureSymbols(),
-      ...generateIndexSymbols(),
+      for (final und in _underlyings) _spot(und),
+      for (final und in _underlyings) ..._chains[und.id]!,
+      for (final und in _underlyings) ..._futures[und.id]!,
+      ...indexSymbols,
+      ..._namedEquities(),
       ...generateEquitySymbols(),
     ];
+
+    for (final symbol in allSymbols) {
+      _byId[symbol['id'] as String] = symbol;
+    }
   }
-  double _niftyLivePrice = 22600.0;
 
   final Map<String, double> _livePrices = {};
   final Map<String, double> _previousTickPrices = {};
@@ -30,152 +107,143 @@ class MockChartDataSource {
   static const double tickSize = 0.05;
   static const int precision = 2;
 
-  static const List<int> _strikes = [
-    22000,
-    22050,
-    22100,
-    22150,
-    22200,
-    22250,
-    22300,
-    22350,
-    22400,
-    22450,
-    22500,
-    22550,
-    22600,
-    22650,
-    22700,
-    22750,
-    22800,
-    22850,
-    22900,
-    22950,
-    23000,
-    23050,
-    23100,
-    23150,
-    23200,
-    23250,
-    23300,
-    23350,
-    23400,
-    23450,
-    23500,
-    23550,
-    23600,
-    23650,
-    23700,
-    23750,
-    23800,
-    23850,
-    23900,
-    23950,
-    24000,
-    24050,
-    24100,
-    24150,
-    24200,
-    24250,
-    24300,
-    24350,
-    24400,
-    24450,
-    24500,
-    24550,
-    24600,
-    24650,
-    24700,
-  ];
-
   final Random _random = Random();
 
-  /// Tracks the live NIFTY spot price as streamed ticks/bars update it.
-  double get lastPrice => _livePrices['NIFTY'] ?? _niftyLivePrice;
+  final Map<String, _Underlying> _underlyingById = {};
+  final Map<String, List<Map<String, dynamic>>> _chains = {};
+  final Map<String, List<Map<String, dynamic>>> _futures = {};
+  final Map<String, Map<String, dynamic>> _byId = {};
 
-  /// Latest emitted tick snapshot, refreshed by [generateTicks].
-  final ticks = <Map<String, dynamic>>[];
-
-  late final List<Map<String, dynamic>> optionChain;
   late final List<Map<String, dynamic>> allSymbols;
 
+  /// Tracks the live NIFTY spot price as streamed ticks/bars update it.
+  double get lastPrice => priceOf('NIFTY');
+
+  /// [symbolId]'s last streamed or loaded price, else a plausible default.
+  double priceOf(String symbolId) =>
+      _livePrices[symbolId] ?? _defaultPrice(symbolId);
+
+  double _defaultPrice(String symbolId) {
+    final symbol = _byId[symbolId];
+    final und = _underlyingOf(symbol);
+    if (und == null) return 1000.0;
+
+    return switch (_kindOf(symbol, und)) {
+      _Kind.spot => und.bandLow + 500 * und.scale,
+      _Kind.future => priceOf(und.id) + 10 * und.scale,
+      _Kind.option => 117.5 * und.scale,
+      _Kind.other => 1000.0,
+    };
+  }
+
   // ---------------------------------------------------------------------------
-  // Symbol generation
+  // Symbol generation and lookup
   // ---------------------------------------------------------------------------
 
-  Map<String, dynamic> get niftySymbol {
+  Map<String, dynamic> _spot(_Underlying und) {
     return {
-      'id': 'NIFTY',
-      'name': 'NIFTY 50',
+      'id': und.id,
+      'name': und.name,
+      'lotSize': und.lotSize,
+      'precision': precision,
+      'tickSize': tickSize,
+      'exchange': 'NSE',
+      'segment': 'EQ',
+    };
+  }
+
+  List<Map<String, dynamic>> _generateOptionChain(
+    _Underlying und,
+    String expiry,
+  ) {
+    final expiryId = _expiryId(expiry);
+
+    return [
+      for (final strike in und.strikes)
+        for (final type in const ['CE', 'PE'])
+          {
+            'id': '${und.id}$expiryId$strike$type',
+            'name': '${und.id} $strike $type $expiry',
+            'precision': precision,
+            'lotSize': und.contractLotSize,
+            'tickSize': tickSize,
+            'expiry': expiry,
+            'exchange': 'NSE',
+            'strike': strike.toString(),
+            'optType': type,
+            'weekly': 'N',
+            'undID': und.id,
+            'segment': 'OPT',
+          },
+    ];
+  }
+
+  Map<String, dynamic> _future(_Underlying und, String expiry) {
+    return {
+      'id': '${und.id}${_expiryId(expiry)}FUT',
+      'name': '${und.id} FUT $expiry',
+      'lotSize': und.contractLotSize,
+      'precision': precision,
+      'tickSize': tickSize,
+      'expiry': expiry,
+      'exchange': 'NSE',
+      'undID': und.id,
+      'segment': 'FUT',
+    };
+  }
+
+  /// [underlyingId]'s option contracts; empty when it has none.
+  List<Map<String, dynamic>> optionChain(String underlyingId) =>
+      _chains[underlyingId] ?? const [];
+
+  /// [underlyingId]'s futures; empty when it has none.
+  List<Map<String, dynamic>> futures(String underlyingId) =>
+      _futures[underlyingId] ?? const [];
+
+  // NIFTY and BANKNIFTY are tradable here on purpose (patrol trades them);
+  // the fixture apps treat them as indices.
+  /// The one index with no option chain, to exercise the layout menu's FnO
+  /// gating by switching to it.
+  final List<Map<String, dynamic>> indexSymbols = const [
+    {
+      'id': 'INDIAVIX',
+      'name': 'INDIA VIX',
       'lotSize': lotSize,
       'precision': precision,
       'tickSize': tickSize,
       'exchange': 'NSE',
+      'segment': 'EQ',
+    },
+  ];
+
+  List<Map<String, dynamic>> _namedEquities() {
+    const names = {
+      'TCS': 'Tata Consultancy Services',
+      'INFY': 'Infosys',
+      'HDFCBANK': 'HDFC Bank',
+      'ICICIBANK': 'ICICI Bank',
+    };
+
+    return [
+      for (final MapEntry(:key, :value) in names.entries)
+        _equity(id: key, name: value),
+    ];
+  }
+
+  Map<String, dynamic> _equity({required String id, required String name}) {
+    return {
+      'id': id,
+      'name': name,
+      'lotSize': 1,
+      'precision': precision,
+      'tickSize': tickSize,
+      'exchange': 'NSE',
+      'segment': 'EQ',
     };
   }
 
-  List<Map<String, dynamic>> _generateOptionChain() {
-    final expiry = nearestExpiry();
-    final expiryId = _expiryId(expiry);
-
-    final symbols = <Map<String, dynamic>>[];
-
-    for (final strike in _strikes) {
-      for (final type in ['CE', 'PE']) {
-        symbols.add({
-          'id': 'NIFTY$expiryId$strike$type',
-          'name': 'NIFTY $strike $type $expiry',
-          'precision': precision,
-          'lotSize': lotSize,
-          'tickSize': tickSize,
-          'expiry': expiry,
-          'exchange': 'NSE',
-          'strike': strike.toString(),
-          'optType': type,
-          'weekly': 'N',
-        });
-      }
-    }
-
-    return symbols;
-  }
-
-  List<Map<String, dynamic>> generateFutureSymbols() {
-    final expiry = nearestExpiry();
-
-    return [
-      {
-        'id': 'NIFTY${_expiryId(expiry)}FUT',
-        'name': 'NIFTY FUT $expiry',
-        'lotSize': lotSize,
-        'precision': precision,
-        'tickSize': tickSize,
-        'expiry': expiry,
-        'exchange': 'NSE',
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> generateIndexSymbols() {
-    return [
-      // The one index in this fixture with no option chain -- lets the
-      // chart layout menu's FnO gating be exercised by actually switching
-      // to it (see NxtChartRepository.chartInterfaceForSymbol).
-      {
-        'id': 'INDIAVIX',
-        'name': 'INDIA VIX',
-        'lotSize': lotSize,
-        'precision': precision,
-        'tickSize': tickSize,
-        'exchange': 'NSE',
-      },
-    ];
-  }
-
   /// Synthetic equity symbols that exist only to give the symbol-search
-  /// panel a large, realistic universe to filter/scroll through. These
-  /// never appear in [generateTicks] -- they're search-only fixtures, not
-  /// tradable symbols.
+  /// panel a large, realistic universe to filter/scroll through.
   static const List<String> _equityNames = [
     'Reliance Industries',
     'Tata Consultancy Services',
@@ -204,38 +272,24 @@ class MockChartDataSource {
       final base = _equityNames[i % _equityNames.length];
       final suffix = i ~/ _equityNames.length;
       final name = suffix == 0 ? base : '$base ${suffix + 1}';
-      final id = 'EQ${(i + 1).toString().padLeft(4, '0')}';
 
-      return {
-        'id': id,
-        'name': name,
-        'lotSize': 1,
-        'precision': precision,
-        'tickSize': tickSize,
-        'exchange': 'NSE',
-      };
+      return _equity(id: 'EQ${(i + 1).toString().padLeft(4, '0')}', name: name);
     });
   }
 
-  bool isFutureSymbol(String symbolId) {
-    return generateFutureSymbols().any((future) {
-      final futureId =
-          future['symbolId']?.toString() ??
-          future['symbol']?.toString() ??
-          future['id']?.toString();
+  /// [symbolId]'s symbol, falling back to NIFTY for an unknown id.
+  Map<String, dynamic> symbolForId(String symbolId) =>
+      _byId[symbolId] ?? _byId['NIFTY']!;
 
-      return futureId == symbolId;
-    });
-  }
+  /// The underlying a symbol prices off (itself for a spot), if any.
+  _Underlying? _underlyingOf(Map<String, dynamic>? symbol) =>
+      _underlyingById[symbol?['undID'] ?? symbol?['id']];
 
-  Map<String, dynamic> symbolForId(String symbolId) {
-    for (final symbol in allSymbols) {
-      if (symbol['id'] == symbolId) {
-        return symbol;
-      }
-    }
+  _Kind _kindOf(Map<String, dynamic>? symbol, _Underlying? und) {
+    if (symbol == null || und == null) return _Kind.other;
+    if (symbol['id'] == und.id) return _Kind.spot;
 
-    return niftySymbol;
+    return symbol['segment'] == 'OPT' ? _Kind.option : _Kind.future;
   }
 
   // ---------------------------------------------------------------------------
@@ -266,32 +320,9 @@ class MockChartDataSource {
     return value ~/ 1000000;
   }
 
-  double initialPriceForSymbol(String symbolId) {
-    if (symbolId == 'NIFTY') {
-      return lastPrice;
-    }
-
-    final option = optionChain.where((item) => item['id'] == symbolId);
-
-    if (option.isNotEmpty) {
-      final item = option.first;
-
-      final strike = toDouble(item['strike']);
-
-      final type = item['optType']?.toString();
-
-      final intrinsic = type == 'CE'
-          ? max(0, lastPrice - strike)
-          : max(0, strike - lastPrice);
-
-      final timeValue = 80 + _random.nextDouble() * 100;
-
-      return max(5, intrinsic + timeValue);
-    }
-
-    return lastPrice;
-  }
-
+  /// `[timestamp, open, high, low, close, volume]` rows. Spots and futures
+  /// converge into their tick band at the end, options into 110-120 (both
+  /// scaled per underlying), so the last candle meets the live ticks.
   List<List<dynamic>> generateBars({
     required String symbolId,
     required int from,
@@ -312,24 +343,12 @@ class MockChartDataSource {
     final safeFrom = min(actualFrom, actualTo);
     final safeTo = max(actualFrom, actualTo);
 
-    // ------------------------------------------------------------
-    // Bar count
-    // ------------------------------------------------------------
-
-    int barCount;
-
-    if (requiredBars > 0) {
-      barCount = requiredBars;
-    } else {
-      barCount = ((safeTo - safeFrom) ~/ intervalMs) + 1;
-    }
+    var barCount = requiredBars > 0
+        ? requiredBars
+        : ((safeTo - safeFrom) ~/ intervalMs) + 1;
 
     // Cap at 50K
     barCount = max(1, min(barCount, 50000));
-
-    // ------------------------------------------------------------
-    // Start time
-    // ------------------------------------------------------------
 
     var startTime = safeTo - ((barCount - 1) * intervalMs);
 
@@ -341,378 +360,98 @@ class MockChartDataSource {
       barCount = min(barCount, availableBars);
     }
 
-    // ------------------------------------------------------------
-    // Instrument type
-    // ------------------------------------------------------------
+    final symbol = _byId[symbolId];
+    final und = _underlyingOf(symbol);
+    final kind = _kindOf(symbol, und);
+    final s = und?.scale ?? 1.0;
+    final bandLow = und?.bandLow ?? 0.0;
 
-    final upperSymbol = symbolId.toUpperCase();
+    final isMarket = kind == _Kind.spot || kind == _Kind.future;
+    final isOption = kind == _Kind.option;
 
-    final isSpot = upperSymbol == 'NIFTY';
+    final minPrice = isMarket ? bandLow - 100 * s : 1.0;
+    final maxPrice = isMarket ? bandLow + 400 * s : 1000.0 * s;
 
-    final isFuture = isFutureSymbol(symbolId);
+    // A future with no history starts at the spot plus a small basis; an
+    // option at a plausible premium, converging later.
+    var price =
+        _livePrices[symbolId] ??
+        switch (kind) {
+          _Kind.future =>
+            priceOf(und!.id) + (5 + _random.nextDouble() * 15) * s,
+          _Kind.option => (80 + _random.nextDouble() * 35) * s,
+          _ => priceOf(symbolId),
+        };
 
-    // ------------------------------------------------------------
-    // OPTIONS DETECTION
-    //
-    // Adjust this if your option symbol format is different.
-    //
-    // Examples:
-    // NIFTY24SEP22100CE
-    // NIFTY24SEP22100PE
-    // NIFTY-22100-CE
-    // NIFTY22100CE
-    // ------------------------------------------------------------
+    price = roundTo(price.clamp(minPrice, maxPrice).toDouble(), precision);
 
-    final isCallOption =
-        upperSymbol.endsWith('CE') || upperSymbol.contains('CE');
+    final maxMovement = (isMarket ? 25.0 : (isOption ? 8.0 : 5.0)) * s;
 
-    final isPutOption =
-        upperSymbol.endsWith('PE') || upperSymbol.contains('PE');
+    final targetMin = isMarket ? bandLow : 110 * s;
+    final targetMax = isMarket ? bandLow + 100 * s : 120 * s;
 
-    final isOption = isCallOption || isPutOption;
-
-    // ------------------------------------------------------------
-    // Market instrument
-    //
-    // NIFTY + Futures retain the existing convergence behavior.
-    // Options get their own 130-150 convergence behavior.
-    // ------------------------------------------------------------
-
-    final isMarketInstrument = isSpot || isFuture;
-
-    // ------------------------------------------------------------
-    // Price range
-    // ------------------------------------------------------------
-
-    final double minPrice;
-    final double maxPrice;
-
-    if (isMarketInstrument) {
-      minPrice = 22000.0;
-      maxPrice = 22500.0;
-    } else if (isOption) {
-      // Options are allowed to move into the 130-150 range.
-      minPrice = 1.0;
-      maxPrice = 1000.0;
-    } else {
-      minPrice = 1.0;
-      maxPrice = 1000.0;
-    }
-
-    // ------------------------------------------------------------
-    // Initial price
-    // ------------------------------------------------------------
-
-    var price = _livePrices[symbolId] ?? initialPriceForSymbol(symbolId);
-
-    // ------------------------------------------------------------
-    // FUTURES
-    //
-    // If no previous historical futures price exists,
-    // start close to NIFTY with a small basis.
-    // ------------------------------------------------------------
-
-    if (isFuture && !_livePrices.containsKey(symbolId)) {
-      final spotPrice = _livePrices['NIFTY'] ?? _niftyLivePrice;
-
-      final basis = 5.0 + _random.nextDouble() * 15.0;
-
-      price = spotPrice + basis;
-    }
-
-    // ------------------------------------------------------------
-    // OPTIONS
-    //
-    // If there is no existing price, start from a reasonable
-    // option premium rather than immediately starting at 130-150.
-    //
-    // The final candles will gradually converge toward 130-150.
-    // ------------------------------------------------------------
-
-    if (isOption && !_livePrices.containsKey(symbolId)) {
-      price = 80.0 + _random.nextDouble() * 35.0;
-    }
-
-    price = price.clamp(minPrice, maxPrice).toDouble();
-
-    price = roundTo(price, precision);
-
-    // ------------------------------------------------------------
-    // Movement
-    // ------------------------------------------------------------
-
-    final maxMovement = isMarketInstrument
-        ? 25.0
-        : isOption
-        ? 8.0
-        : 5.0;
-
-    // ------------------------------------------------------------
-    // NIFTY / FUTURES CONVERGENCE
-    // ------------------------------------------------------------
-
-    const marketConvergenceBars = 20;
-
-    const marketTargetMin = 22100.0;
-    const marketTargetMax = 22200.0;
-
-    // ------------------------------------------------------------
-    // OPTIONS CONVERGENCE
-    //
-    // Last 20 candles:
-    //     gradually move toward 130-150
-    //
-    // Last 10 candles:
-    //     stronger upward/steeper movement
-    //
-    // Final candles:
-    //     stay tightly around 130-150.
-    // ------------------------------------------------------------
-
-    const optionConvergenceBars = 20;
-
-    const optionTargetMin = 110.0;
-    const optionTargetMax = 120.0;
+    const convergenceBars = 20;
 
     final bars = <List<dynamic>>[];
-
-    // ------------------------------------------------------------
-    // Generate OHLCV
-    // ------------------------------------------------------------
 
     for (var i = 0; i < barCount; i++) {
       final timestamp = startTime + (i * intervalMs);
 
       final barsRemaining = barCount - 1 - i;
 
-      // ============================================================
-      // MARKET CONVERGENCE
-      //
-      // NIFTY / FUTURES only
-      // ============================================================
-
-      double marketConvergence = 0.0;
-
-      if (isMarketInstrument && barsRemaining < marketConvergenceBars) {
-        final barsIntoConvergence = marketConvergenceBars - barsRemaining;
-
-        marketConvergence = (barsIntoConvergence / marketConvergenceBars).clamp(
-          0.0,
-          1.0,
-        );
-      }
-
-      // ============================================================
-      // OPTION CONVERGENCE
-      // ============================================================
-
-      double optionConvergence = 0.0;
-
-      if (isOption && barsRemaining < optionConvergenceBars) {
-        final barsIntoConvergence = optionConvergenceBars - barsRemaining;
-
-        optionConvergence = (barsIntoConvergence / optionConvergenceBars).clamp(
-          0.0,
-          1.0,
-        );
-      }
-
-      // ------------------------------------------------------------
-      // Open
-      // ------------------------------------------------------------
-
       final open = price;
 
-      // ------------------------------------------------------------
-      // Normal random movement
-      // ------------------------------------------------------------
+      var closePrice = open + (_random.nextDouble() - 0.5) * (maxMovement * 2);
 
-      final movement = (_random.nextDouble() - 0.5) * (maxMovement * 2);
+      if (barsRemaining < convergenceBars) {
+        final convergence =
+            ((convergenceBars - barsRemaining) / convergenceBars).clamp(
+              0.0,
+              1.0,
+            );
 
-      double closePrice = open + movement;
-
-      // ============================================================
-      // NIFTY / FUTURES
-      //
-      // Existing 22100-22200 convergence.
-      // ============================================================
-
-      if (isMarketInstrument && marketConvergence > 0.0) {
-        final targetPrice =
-            marketTargetMin +
-            _random.nextDouble() * (marketTargetMax - marketTargetMin);
-
-        final pullStrength = marketConvergence * 0.65;
-
-        closePrice = closePrice + ((targetPrice - closePrice) * pullStrength);
-
-        final targetNoise =
-            (_random.nextDouble() - 0.5) * 20.0 * (1.0 - marketConvergence);
-
-        closePrice += targetNoise;
-
-        // ----------------------------------------------------------
-        // Final 10 candles
-        // ----------------------------------------------------------
-
-        if (barsRemaining <= 10) {
-          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
-
-          final allowedOutsideRange = 10.0 * (1.0 - finalPhase);
-
-          closePrice = closePrice.clamp(
-            marketTargetMin - allowedOutsideRange,
-            marketTargetMax + allowedOutsideRange,
+        if (isMarket) {
+          closePrice = _convergeMarket(
+            closePrice,
+            convergence: convergence,
+            barsRemaining: barsRemaining,
+            targetMin: targetMin,
+            targetMax: targetMax,
+            scale: s,
           );
-
-          if (finalPhase > 0.5) {
-            final finalTarget =
-                marketTargetMin +
-                _random.nextDouble() * (marketTargetMax - marketTargetMin);
-
-            closePrice =
-                closePrice + ((finalTarget - closePrice) * finalPhase * 0.6);
-          }
-        }
-      }
-
-      // ============================================================
-      // OPTIONS
-      //
-      // Gradually rise/steepen toward 130-150.
-      // ============================================================
-
-      if (isOption && optionConvergence > 0.0) {
-        // ----------------------------------------------------------
-        // Random target between 130 and 150.
-        // ----------------------------------------------------------
-
-        final targetPrice =
-            optionTargetMin +
-            _random.nextDouble() * (optionTargetMax - optionTargetMin);
-
-        // ----------------------------------------------------------
-        // First 20 candles
-        //
-        // Gradual pull.
-        //
-        // Example:
-        // candle 1  -> weak pull
-        // candle 10 -> medium pull
-        // candle 20 -> strong pull
-        // ----------------------------------------------------------
-
-        double pullStrength = optionConvergence * 0.45;
-
-        // ----------------------------------------------------------
-        // Last 10 candles
-        //
-        // Make the rise noticeably steeper.
-        // ----------------------------------------------------------
-
-        if (barsRemaining <= 10) {
-          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
-
-          // Starts around 0.45 and increases toward 0.90.
-          pullStrength = 0.45 + (finalPhase * 0.45);
-        }
-
-        // Pull current close toward target.
-        closePrice = closePrice + ((targetPrice - closePrice) * pullStrength);
-
-        // ----------------------------------------------------------
-        // Positive bias in final 10 candles.
-        //
-        // This makes the chart visually rise rather than simply
-        // oscillate around the target.
-        // ----------------------------------------------------------
-
-        if (barsRemaining <= 10) {
-          final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
-
-          final upwardBias = 1.5 + (finalPhase * 3.0);
-
-          closePrice += upwardBias;
-
-          // Small noise so it doesn't look completely artificial.
-          final noise = (_random.nextDouble() - 0.5) * 2.0 * (1.0 - finalPhase);
-
-          closePrice += noise;
-        }
-
-        // ----------------------------------------------------------
-        // Final 5 candles
-        //
-        // Tighten price into 130-150.
-        // ----------------------------------------------------------
-
-        if (barsRemaining <= 5) {
-          final finalPhase = ((5 - barsRemaining) / 5.0).clamp(0.0, 1.0);
-
-          final finalTarget =
-              optionTargetMin +
-              _random.nextDouble() * (optionTargetMax - optionTargetMin);
-
-          closePrice =
-              closePrice +
-              ((finalTarget - closePrice) * (0.65 + finalPhase * 0.25));
-
-          // Prevent excessive movement outside target.
-          final allowedOutside = 5.0 * (1.0 - finalPhase);
-
-          closePrice = closePrice.clamp(
-            optionTargetMin - allowedOutside,
-            optionTargetMax + allowedOutside,
+        } else if (isOption) {
+          closePrice = _convergeOption(
+            closePrice,
+            convergence: convergence,
+            barsRemaining: barsRemaining,
+            targetMin: targetMin,
+            targetMax: targetMax,
+            scale: s,
           );
         }
       }
-
-      // ------------------------------------------------------------
-      // Close
-      // ------------------------------------------------------------
 
       final close = roundTo(
         closePrice.clamp(minPrice, maxPrice).toDouble(),
         precision,
       );
 
-      // ------------------------------------------------------------
-      // Wicks
-      // ------------------------------------------------------------
-
       final upperWick = _random.nextDouble() * (maxMovement * 0.5);
 
       final lowerWick = _random.nextDouble() * (maxMovement * 0.5);
 
-      double highPrice = max(open, close) + upperWick;
+      var highPrice = max(open, close) + upperWick;
 
-      double lowPrice = min(open, close) - lowerWick;
+      var lowPrice = min(open, close) - lowerWick;
 
-      // ============================================================
-      // NIFTY / FUTURES WICK CONTROL
-      // ============================================================
+      // Keep the final candles' wicks near the target band.
+      if ((isMarket || isOption) && barsRemaining <= 10) {
+        final wickRoom = (isMarket ? 15.0 : 8.0) * s;
 
-      if (isMarketInstrument && barsRemaining <= 10) {
-        highPrice = min(highPrice, marketTargetMax + 15.0);
+        highPrice = min(highPrice, targetMax + wickRoom);
 
-        lowPrice = max(lowPrice, marketTargetMin - 15.0);
+        lowPrice = max(lowPrice, targetMin - wickRoom);
       }
-
-      // ============================================================
-      // OPTION WICK CONTROL
-      //
-      // Keep the final candles visually around 130-150.
-      // ============================================================
-
-      if (isOption && barsRemaining <= 10) {
-        highPrice = min(highPrice, optionTargetMax + 8.0);
-
-        lowPrice = max(lowPrice, optionTargetMin - 8.0);
-      }
-
-      // ------------------------------------------------------------
-      // High / Low
-      // ------------------------------------------------------------
 
       final high = roundTo(
         highPrice.clamp(minPrice, maxPrice).toDouble(),
@@ -724,44 +463,112 @@ class MockChartDataSource {
         precision,
       );
 
-      // ------------------------------------------------------------
-      // Volume
-      // ------------------------------------------------------------
-
       final volume = 1000 + _random.nextInt(10000);
 
-      // ------------------------------------------------------------
-      // Candle
-      //
-      // [timestamp, open, high, low, close, volume]
-      // ------------------------------------------------------------
-
       bars.add([timestamp, roundTo(open, precision), high, low, close, volume]);
-
-      // ------------------------------------------------------------
-      // Next candle starts from previous close.
-      // ------------------------------------------------------------
 
       price = close;
     }
 
-    // ------------------------------------------------------------
-    // Save last historical close for streaming.
-    // ------------------------------------------------------------
-
+    // Save the last historical close for streaming.
     if (bars.isNotEmpty) {
-      final lastClose = toDouble(bars.last[4]);
+      _livePrices[symbolId] = toDouble(bars.last[4]);
+    }
 
-      _livePrices[symbolId] = lastClose;
+    return bars;
+  }
 
-      if (isSpot) {
-        _niftyLivePrice = lastClose;
+  // Pulls a spot/future close into the target band over the last 20 bars,
+  // clamping tighter over the final 10.
+  double _convergeMarket(
+    double closePrice, {
+    required double convergence,
+    required int barsRemaining,
+    required double targetMin,
+    required double targetMax,
+    required double scale,
+  }) {
+    var close = closePrice;
+
+    final targetPrice =
+        targetMin + _random.nextDouble() * (targetMax - targetMin);
+
+    close += (targetPrice - close) * convergence * 0.65;
+
+    close += (_random.nextDouble() - 0.5) * 20.0 * scale * (1.0 - convergence);
+
+    if (barsRemaining <= 10) {
+      final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+      final allowedOutsideRange = 10.0 * scale * (1.0 - finalPhase);
+
+      close = close.clamp(
+        targetMin - allowedOutsideRange,
+        targetMax + allowedOutsideRange,
+      );
+
+      if (finalPhase > 0.5) {
+        final finalTarget =
+            targetMin + _random.nextDouble() * (targetMax - targetMin);
+
+        close += (finalTarget - close) * finalPhase * 0.6;
       }
     }
 
-    ticks.clear();
+    return close;
+  }
 
-    return bars;
+  // Pulls an option close into the target band over the last 20 bars, with
+  // an upward bias over the final 10 and a tight clamp over the final 5.
+  double _convergeOption(
+    double closePrice, {
+    required double convergence,
+    required int barsRemaining,
+    required double targetMin,
+    required double targetMax,
+    required double scale,
+  }) {
+    var close = closePrice;
+
+    final targetPrice =
+        targetMin + _random.nextDouble() * (targetMax - targetMin);
+
+    var pullStrength = convergence * 0.45;
+
+    if (barsRemaining <= 10) {
+      final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+      // Starts around 0.45 and increases toward 0.90.
+      pullStrength = 0.45 + (finalPhase * 0.45);
+    }
+
+    close += (targetPrice - close) * pullStrength;
+
+    if (barsRemaining <= 10) {
+      final finalPhase = ((10 - barsRemaining) / 10.0).clamp(0.0, 1.0);
+
+      close += (1.5 + (finalPhase * 3.0)) * scale;
+
+      close += (_random.nextDouble() - 0.5) * 2.0 * scale * (1.0 - finalPhase);
+    }
+
+    if (barsRemaining <= 5) {
+      final finalPhase = ((5 - barsRemaining) / 5.0).clamp(0.0, 1.0);
+
+      final finalTarget =
+          targetMin + _random.nextDouble() * (targetMax - targetMin);
+
+      close += (finalTarget - close) * (0.65 + finalPhase * 0.25);
+
+      final allowedOutside = 5.0 * scale * (1.0 - finalPhase);
+
+      close = close.clamp(
+        targetMin - allowedOutside,
+        targetMax + allowedOutside,
+      );
+    }
+
+    return close;
   }
 
   // ---------------------------------------------------------------------------
@@ -771,478 +578,212 @@ class MockChartDataSource {
   double _random3() =>
       double.parse(((_random.nextDouble() - 0.48) * 10).toStringAsFixed(3));
 
-  List<Map<String, dynamic>> generateTicks() {
-    ticks.clear();
-
+  /// One tick per known id in [symbolIds]; unknown ids are skipped.
+  List<Map<String, dynamic>> generateTicks(Iterable<String> symbolIds) {
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // ============================================================
-    // CONSTANT PRICE RANGES
-    // ============================================================
+    return [
+      for (final id in symbolIds)
+        if (_byId[id] case final symbol?) _tick(symbol, now),
+    ];
+  }
 
-    const double niftyMin = 22100.0;
-    const double niftyMax = 22150.0;
+  // Spots and futures walk +-2 inside a 50-wide band, options +-1 inside
+  // 110-125 (NIFTY's numbers, scaled); anything else drifts freely.
+  Map<String, dynamic> _tick(Map<String, dynamic> symbol, int now) {
+    final id = symbol['id'] as String;
+    final und = _underlyingOf(symbol);
+    final kind = _kindOf(symbol, und);
+    final s = und?.scale ?? 1.0;
 
-    const double futureMin = 22100.0;
-    const double futureMax = 22150.0;
+    final band = switch (kind) {
+      _Kind.spot || _Kind.future => (und!.bandLow, und.bandLow + 50 * s),
+      _Kind.option => (110 * s, 125 * s),
+      _Kind.other => null,
+    };
 
-    const double optionMin = 110.0;
-    const double optionMax = 125.0;
+    var price = _livePrices[id];
 
-    // ============================================================
-    // 1. SPOT / NIFTY
-    // ============================================================
-
-    var spotPrice = _livePrices['NIFTY'];
-
-    // ------------------------------------------------------------
-    // First time: initialize NIFTY inside 22100 - 22150
-    // ------------------------------------------------------------
-
-    if (spotPrice == null || spotPrice < niftyMin || spotPrice > niftyMax) {
-      spotPrice = niftyMin + (_random.nextDouble() * (niftyMax - niftyMin));
+    if (band != null && (price == null || price < band.$1 || price > band.$2)) {
+      price = band.$1 + _random.nextDouble() * (band.$2 - band.$1);
     }
 
-    // ------------------------------------------------------------
-    // Spot movement: -2 to +2
-    // ------------------------------------------------------------
+    price ??= priceOf(id);
 
-    final spotMovement = (_random.nextDouble() - 0.5) * 4.0;
+    final step = switch (kind) {
+      _Kind.option => 2.0 * s,
+      _Kind.other => price * 0.001,
+      _ => 4.0 * s,
+    };
 
-    spotPrice += spotMovement;
+    price += (_random.nextDouble() - 0.5) * step;
 
-    // ------------------------------------------------------------
-    // Keep NIFTY strictly between 22100 - 22150
-    // ------------------------------------------------------------
+    if (band != null) price = price.clamp(band.$1, band.$2);
 
-    spotPrice = spotPrice.clamp(niftyMin, niftyMax).toDouble();
+    price = roundTo(price, precision);
 
-    spotPrice = roundTo(spotPrice, precision);
+    _livePrices[id] = price;
 
-    // ------------------------------------------------------------
-    // Save Spot live price
-    // ------------------------------------------------------------
+    final previous = _previousTickPrices[id] ?? price;
 
-    _niftyLivePrice = spotPrice;
-    _livePrices['NIFTY'] = spotPrice;
+    final change = roundTo(price - previous, precision);
 
-    // ------------------------------------------------------------
-    // Spot change
-    // ------------------------------------------------------------
-
-    final previousSpot = _previousTickPrices['NIFTY'] ?? spotPrice;
-
-    final spotChange = roundTo(spotPrice - previousSpot, precision);
-
-    final spotChangePer = previousSpot != 0
-        ? roundTo((spotChange / previousSpot) * 100, 2)
+    final changePer = previous != 0
+        ? roundTo((change / previous) * 100, 2)
         : 0.0;
 
-    _previousTickPrices['NIFTY'] = spotPrice;
+    _previousTickPrices[id] = price;
 
-    // ------------------------------------------------------------
-    // Add Spot tick
-    // ------------------------------------------------------------
-
-    ticks.add({
-      'symbolId': 'NIFTY',
-
-      'ltp': spotPrice,
-      'dayClose': spotPrice,
-
-      'ltq': 10 + _random.nextInt(90),
-
-      'chng': spotChange,
-      'chngPer': spotChangePer,
-
+    final common = {
+      'symbolId': id,
+      'ltp': price,
+      'dayClose': price,
+      'chng': change,
+      'chngPer': changePer,
       'ltt': now,
-
       'oiChngPer': (_random.nextDouble() - 0.5) * 2,
-
-      'oi': _random3(),
-      'volume': _random3(),
-
       'delta': _random3(),
       'gamma': _random3(),
       'theta': _random3(),
       'vega': _random3(),
-    });
+    };
 
-    // ============================================================
-    // 2. OPTIONS
-    // ============================================================
-
-    for (final option in optionChain) {
-      final symbolId =
-          option['symbolId']?.toString() ??
-          option['symbol']?.toString() ??
-          option['id']?.toString();
-
-      if (symbolId == null || symbolId.isEmpty) {
-        continue;
-      }
-
-      // ----------------------------------------------------------
-      // Get current option price
-      // ----------------------------------------------------------
-
-      var optionPrice = _livePrices[symbolId];
-
-      // ----------------------------------------------------------
-      // First time / invalid price
-      // Initialize between 110 - 125
-      // ----------------------------------------------------------
-
-      if (optionPrice == null ||
-          optionPrice < optionMin ||
-          optionPrice > optionMax) {
-        optionPrice =
-            optionMin + (_random.nextDouble() * (optionMax - optionMin));
-      }
-
-      // ----------------------------------------------------------
-      // Option movement: -1 to +1
-      // ----------------------------------------------------------
-
-      final optionMovement = (_random.nextDouble() - 0.5) * 2.0;
-
-      optionPrice += optionMovement;
-
-      // ----------------------------------------------------------
-      // Keep option price between 110 - 125
-      // ----------------------------------------------------------
-
-      optionPrice = optionPrice.clamp(optionMin, optionMax).toDouble();
-
-      optionPrice = roundTo(optionPrice, precision);
-
-      // ----------------------------------------------------------
-      // Save option live price
-      // ----------------------------------------------------------
-
-      _livePrices[symbolId] = optionPrice;
-
-      // ----------------------------------------------------------
-      // Option change
-      // ----------------------------------------------------------
-
-      final previousOption = _previousTickPrices[symbolId] ?? optionPrice;
-
-      final optionChange = roundTo(optionPrice - previousOption, precision);
-
-      final optionChangePer = previousOption != 0
-          ? roundTo((optionChange / previousOption) * 100, 2)
-          : 0.0;
-
-      _previousTickPrices[symbolId] = optionPrice;
-
-      // ----------------------------------------------------------
-      // Add Option tick
-      // ----------------------------------------------------------
-
-      ticks.add({
-        ...option,
-
-        'symbolId': symbolId,
-
-        'ltp': optionPrice,
-        'dayClose': optionPrice,
-
-        'ltq': 1 + _random.nextInt(99),
-
-        'chng': optionChange,
-        'chngPer': optionChangePer,
-
-        'ltt': now,
-
-        'oiChng': _random3(),
-        'oiChngPer': (_random.nextDouble() - 0.5) * 2,
-
-        'OI': _random3(),
-
-        'vwap': option['vwap'] ?? optionPrice,
-
-        'vol': _random3(),
-
-        'itm': _random.nextBool().toString(),
-        'iv': _random3(),
-        'delta': _random3(),
-        'gamma': _random3(),
-        'theta': _random3(),
-        'rho': _random3(),
-        'vega': _random3(),
-        'highIV': _random3(),
-        'lowIV': _random3(),
-      });
-    }
-
-    // ============================================================
-    // 3. FUTURES
-    // ============================================================
-
-    for (final future in generateFutureSymbols()) {
-      final symbolId =
-          future['symbolId']?.toString() ??
-          future['symbol']?.toString() ??
-          future['id']?.toString();
-
-      if (symbolId == null || symbolId.isEmpty) {
-        continue;
-      }
-
-      // ----------------------------------------------------------
-      // Get current Future price
-      // ----------------------------------------------------------
-
-      var futurePrice = _livePrices[symbolId];
-
-      // ----------------------------------------------------------
-      // First time / invalid price
-      // Initialize between 22100 - 22150
-      // ----------------------------------------------------------
-
-      if (futurePrice == null ||
-          futurePrice < futureMin ||
-          futurePrice > futureMax) {
-        futurePrice =
-            futureMin + (_random.nextDouble() * (futureMax - futureMin));
-      }
-
-      // ----------------------------------------------------------
-      // Future movement: -2 to +2
-      //
-      // Same range/movement style as NIFTY.
-      // ----------------------------------------------------------
-
-      final futureMovement = (_random.nextDouble() - 0.5) * 4.0;
-
-      futurePrice += futureMovement;
-
-      // ----------------------------------------------------------
-      // Keep Future between 22100 - 22150
-      // ----------------------------------------------------------
-
-      futurePrice = futurePrice.clamp(futureMin, futureMax).toDouble();
-
-      futurePrice = roundTo(futurePrice, precision);
-
-      // ----------------------------------------------------------
-      // Save Future live price
-      // ----------------------------------------------------------
-
-      _livePrices[symbolId] = futurePrice;
-
-      // Also update future map.
-      future['ltp'] = futurePrice;
-
-      // ----------------------------------------------------------
-      // Previous Future price
-      // ----------------------------------------------------------
-
-      final previousFuture = _previousTickPrices[symbolId] ?? futurePrice;
-
-      // ----------------------------------------------------------
-      // Future change
-      // ----------------------------------------------------------
-
-      final futureChange = roundTo(futurePrice - previousFuture, precision);
-
-      // ----------------------------------------------------------
-      // Future change %
-      // ----------------------------------------------------------
-
-      final futureChangePer = previousFuture != 0
-          ? roundTo((futureChange / previousFuture) * 100, 2)
-          : 0.0;
-
-      // ----------------------------------------------------------
-      // Save previous Future price
-      // ----------------------------------------------------------
-
-      _previousTickPrices[symbolId] = futurePrice;
-
-      // ----------------------------------------------------------
-      // Add Future tick
-      // ----------------------------------------------------------
-
-      ticks.add({
-        ...future,
-
-        'symbolId': symbolId,
-
-        'ltp': futurePrice,
-        'dayClose': futurePrice,
-
+    if (kind != _Kind.option) {
+      return {
+        if (kind == _Kind.future) ...symbol,
+        ...common,
         'ltq': 10 + _random.nextInt(90),
-
-        'chng': futureChange,
-        'chngPer': futureChangePer,
-
-        'ltt': now,
-
-        'oiChngPer': (_random.nextDouble() - 0.5) * 2,
-
         'oi': _random3(),
-
         'volume': _random3(),
-
-        'delta': _random3(),
-        'gamma': _random3(),
-        'theta': _random3(),
-        'vega': _random3(),
-      });
+      };
     }
 
-    return ticks;
+    return {
+      ...symbol,
+      ...common,
+      'ltq': 1 + _random.nextInt(99),
+      'oiChng': _random3(),
+      'OI': _random3(),
+      'vwap': price,
+      'vol': _random3(),
+      'itm': _random.nextBool().toString(),
+      'iv': _random3(),
+      'rho': _random3(),
+      'highIV': _random3(),
+      'lowIV': _random3(),
+    };
   }
 
   // ---------------------------------------------------------------------------
   // ATM / option-chain lookups
   // ---------------------------------------------------------------------------
 
-  int nearestStrike(double price) {
-    var nearest = _strikes.first;
-    var distance = (price - nearest).abs();
+  int _nearestStrike(_Underlying und) {
+    final price = priceOf(und.id);
 
-    for (final strike in _strikes) {
-      final currentDistance = (price - strike).abs();
-
-      if (currentDistance < distance) {
-        nearest = strike;
-        distance = currentDistance;
-      }
-    }
-
-    return nearest;
-  }
-
-  List<Map<String, dynamic>> atmOptions() {
-    if (optionChain.isEmpty || lastPrice <= 0) {
-      return [];
-    }
-
-    final atmStrike = nearestStrike(lastPrice);
-    final expiry = nearestExpiry();
-
-    final ce = optionChain.firstWhere(
-      (option) =>
-          toDouble(option['strike']) == toDouble(atmStrike) &&
-          option['optType']?.toString().toUpperCase() == 'CE' &&
-          option['expiry']?.toString() == expiry,
-      orElse: () => <String, dynamic>{},
+    return und.strikes.reduce(
+      (a, b) => (price - b).abs() < (price - a).abs() ? b : a,
     );
-
-    final pe = optionChain.firstWhere(
-      (option) =>
-          toDouble(option['strike']) == toDouble(atmStrike) &&
-          option['optType']?.toString().toUpperCase() == 'PE' &&
-          option['expiry']?.toString() == expiry,
-      orElse: () => <String, dynamic>{},
-    );
-
-    final result = <Map<String, dynamic>>[];
-
-    if (ce.isNotEmpty) {
-      result.add(Map<String, dynamic>.from(ce));
-    }
-
-    if (pe.isNotEmpty) {
-      result.add(Map<String, dynamic>.from(pe));
-    }
-
-    return result;
   }
 
-  int mockVolume(Map<String, dynamic> option) {
-    final strike = toInt(option['strike']) ?? nearestStrike(lastPrice);
+  /// [underlyingId]'s most active options by mock volume, busiest first.
+  List<Map<String, dynamic>> topOptions(String underlyingId, {int limit = 10}) {
+    final und = _underlyingById[underlyingId];
+    if (und == null) return const [];
 
-    final distance = (strike - nearestStrike(lastPrice)).abs();
+    final atm = _nearestStrike(und);
 
-    return max(1000, 50000 - distance * 100 + _random.nextInt(20000));
-  }
+    final ranked = [
+      for (final option in optionChain(underlyingId))
+        (
+          option: option,
+          volume: max(
+            1000,
+            50000 -
+                (toInt(option['strike'])! - atm).abs() ~/
+                    und.strikeStep *
+                    5000 +
+                _random.nextInt(20000),
+          ),
+        ),
+    ]..sort((a, b) => b.volume.compareTo(a.volume));
 
-  List<Map<String, dynamic>> topOptionsByVolume({int limit = 10}) {
-    final sorted = List<Map<String, dynamic>>.from(optionChain);
-
-    sorted.sort((a, b) => mockVolume(b).compareTo(mockVolume(a)));
-
-    return sorted.take(limit).map((option) {
-      return {
-        'symId': option['id'],
-        'name': option['name'],
-        'optType': option['optType'],
-        'exchange': option['exchange'],
-      };
-    }).toList();
+    return [for (final row in ranked.take(limit)) row.option];
   }
 
   // ---------------------------------------------------------------------------
   // Open interest
   // ---------------------------------------------------------------------------
 
-  int generateOi(int strike, String type) {
-    final distance = (strike - nearestStrike(lastPrice)).abs();
+  int _oi(_Underlying und, int atm, int strike, String type) {
+    final distance = (strike - atm).abs() / und.strikeStep;
 
-    final base = max(10000, 100000 - distance * 50);
+    final base = max(10000, 100000 - distance * 2500);
 
     final typeMultiplier = type == 'CE' ? 1.0 : 1.2;
 
     return (base * typeMultiplier).round() + _random.nextInt(25000);
   }
 
-  int generateOiChange() {
-    return _random.nextInt(50);
-  }
+  int _oiChange() => _random.nextInt(50);
 
-  Map<String, dynamic> oiAnalysisAroundAtm() {
-    final atm = nearestStrike(lastPrice);
-
+  /// `{calls, puts}` of `{strike: {oi, oiChg, prevOi}}` for 5 strikes
+  /// either side of ATM, two strike steps apart.
+  Map<String, dynamic> oiAnalysisAroundAtm(String underlyingId) {
     final calls = <String, dynamic>{};
     final puts = <String, dynamic>{};
+    final und = _underlyingById[underlyingId];
 
-    for (var offset = -5; offset <= 5; offset++) {
-      final strike = atm + (offset * 100);
+    if (und != null) {
+      final atm = _nearestStrike(und);
 
-      final callOi = generateOi(strike, 'CE');
-      final putOi = generateOi(strike, 'PE');
+      for (var offset = -5; offset <= 5; offset++) {
+        final strike = atm + (offset * 2 * und.strikeStep);
 
-      calls[strike.toString()] = {
-        'oi': callOi,
-        'oiChg': generateOiChange(),
-        'prevOi': max(0, callOi - generateOiChange()),
-      };
+        final callOi = _oi(und, atm, strike, 'CE');
+        final putOi = _oi(und, atm, strike, 'PE');
 
-      puts[strike.toString()] = {
-        'oi': putOi,
-        'oiChg': generateOiChange(),
-        'prevOi': max(0, putOi - generateOiChange()),
-      };
+        calls[strike.toString()] = {
+          'oi': callOi,
+          'oiChg': _oiChange(),
+          'prevOi': max(0, callOi - _oiChange()),
+        };
+
+        puts[strike.toString()] = {
+          'oi': putOi,
+          'oiChg': _oiChange(),
+          'prevOi': max(0, putOi - _oiChange()),
+        };
+      }
     }
 
     return {'calls': calls, 'puts': puts};
   }
 
-  Map<String, dynamic> oiChangeByStrike() {
+  /// `{calls, puts}` of `{strike: oiChange}` over every chain strike.
+  Map<String, dynamic> oiChangeByStrike(String underlyingId) =>
+      _byStrike(underlyingId, (und, atm, strike, type) => _oiChange());
+
+  /// `{calls, puts}` of `{strike: oi}` over every chain strike.
+  Map<String, dynamic> oiByStrike(String underlyingId) =>
+      _byStrike(underlyingId, _oi);
+
+  Map<String, dynamic> _byStrike(
+    String underlyingId,
+    int Function(_Underlying und, int atm, int strike, String type) value,
+  ) {
     final calls = <String, dynamic>{};
     final puts = <String, dynamic>{};
+    final und = _underlyingById[underlyingId];
 
-    for (final strike in _strikes) {
-      calls[strike.toString()] = generateOiChange();
+    if (und != null) {
+      final atm = _nearestStrike(und);
 
-      puts[strike.toString()] = generateOiChange();
-    }
+      for (final strike in und.strikes) {
+        calls[strike.toString()] = value(und, atm, strike, 'CE');
 
-    return {'calls': calls, 'puts': puts};
-  }
-
-  Map<String, dynamic> oiByStrike() {
-    final calls = <String, dynamic>{};
-    final puts = <String, dynamic>{};
-
-    for (final strike in _strikes) {
-      calls[strike.toString()] = generateOi(strike, 'CE');
-
-      puts[strike.toString()] = generateOi(strike, 'PE');
+        puts[strike.toString()] = value(und, atm, strike, 'PE');
+      }
     }
 
     return {'calls': calls, 'puts': puts};
@@ -1252,17 +793,33 @@ class MockChartDataSource {
   // Intraday history (PCR / straddle / IV)
   // ---------------------------------------------------------------------------
 
-  List<Map<String, dynamic>> pcrIntradaySeries() {
+  Iterable<DateTime> _intraday(Duration interval) sync* {
     final now = DateTime.now();
-    final from = now.subtract(const Duration(hours: 4));
-    const interval = Duration(minutes: 1);
+
+    for (
+      var time = now.subtract(const Duration(hours: 4));
+      !time.isAfter(now);
+      time = time.add(interval)
+    ) {
+      yield time;
+    }
+  }
+
+  List<Map<String, dynamic>> pcrIntradaySeries(String underlyingId) {
+    final und = _underlyingById[underlyingId];
+    if (und == null) return const [];
+
+    final s = und.scale;
     final rows = <Map<String, dynamic>>[];
-    var price = lastPrice;
+    var price = priceOf(und.id);
     var pcr = 0.75;
 
-    for (var time = from; !time.isAfter(now); time = time.add(interval)) {
+    for (final time in _intraday(const Duration(minutes: 1))) {
       price = roundTo(
-        (price + (_random.nextDouble() - 0.5) * 20).clamp(18000.0, 28000.0),
+        (price + (_random.nextDouble() - 0.5) * 20 * s).clamp(
+          18000.0 * s,
+          28000.0 * s,
+        ),
         precision,
       );
       pcr = (pcr + (_random.nextDouble() - 0.5) * 0.04).clamp(0.2, 1.8);
@@ -1282,21 +839,20 @@ class MockChartDataSource {
     return rows;
   }
 
-  Map<String, List<Map<String, dynamic>>> atmStraddleIntradaySeries() {
-    final now = DateTime.now();
+  Map<String, List<Map<String, dynamic>>> atmStraddleIntradaySeries(
+    String underlyingId,
+  ) {
+    final und = _underlyingById[underlyingId];
+    if (und == null) return const {};
 
-    final from = now.subtract(const Duration(hours: 4));
-
-    const interval = Duration(minutes: 60);
-
+    final s = und.scale;
     final candles = <Map<String, dynamic>>[];
+    var straddle = 900.0 * s;
 
-    var straddle = 22600.0;
-
-    for (var time = from; !time.isAfter(now); time = time.add(interval)) {
-      straddle = (straddle + (_random.nextDouble() - 0.5) * 12).clamp(
-        100.0,
-        900.0,
+    for (final time in _intraday(const Duration(minutes: 60))) {
+      straddle = (straddle + (_random.nextDouble() - 0.5) * 12 * s).clamp(
+        100.0 * s,
+        900.0 * s,
       );
 
       candles.add({
@@ -1308,18 +864,13 @@ class MockChartDataSource {
     return {nearestExpiry(): candles};
   }
 
-  List<Map<String, dynamic>> atmIvIntradaySeries() {
-    final now = DateTime.now();
-
-    final from = now.subtract(const Duration(hours: 4));
-
-    const interval = Duration(minutes: 1);
+  List<Map<String, dynamic>> atmIvIntradaySeries(String underlyingId) {
+    if (!_underlyingById.containsKey(underlyingId)) return const [];
 
     final candles = <Map<String, dynamic>>[];
-
     var iv = 20.0;
 
-    for (var time = from; !time.isAfter(now); time = time.add(interval)) {
+    for (final time in _intraday(const Duration(minutes: 1))) {
       iv = (iv + (_random.nextDouble() - 0.5) * 0.4).clamp(12.0, 35.0);
 
       candles.add({

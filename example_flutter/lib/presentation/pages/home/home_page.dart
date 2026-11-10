@@ -1,33 +1,27 @@
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
-import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
+import 'package:neocharts_exampleapp/presentation/pages/charts/neo_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/uni_chart_screen.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/benchmark_control_panel.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
-import 'package:nxtchart/interface.dart';
-import 'package:nxtchart/widgets.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final bool isDark;
 
-  /// Test-only: a pre-seeded interface a test still holds a reference to
+  /// Test-only: a pre-seeded host a test still holds a reference to
   /// (e.g. after calling seedPosition()) -- reused verbatim, since the
   /// test's setup already happened on that exact object. Null for real
   /// end-user usage, where each chart open gets its own fresh instance.
-  final ChartInterface? interfaceOverride;
-
-  /// Test-only, see [ChartTemplateApp.widgetOverrides].
-  final NeoChartWidgetOverrides? widgetOverrides;
+  final NeoChartsRepository? hostOverride;
 
   const HomePage({
     super.key,
     required this.onToggleTheme,
     required this.isDark,
-    this.interfaceOverride,
-    this.widgetOverrides,
+    this.hostOverride,
   });
 
   @override
@@ -36,29 +30,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Non-null once a benchmark control has been touched -- the
-  // "NeoCharts" card then opens a fresh, purpose-configured interface
+  // "NeoCharts" card then opens a fresh, purpose-configured host
   // instead.
   BenchmarkConfig? _benchmarkConfig;
 
-  ChartInterface _resolveInterface() {
+  NeoChartsRepository _resolveHost() {
     final config = _benchmarkConfig;
     if (config != null) {
-      return NxtChartRepository(
-        storageKey: 'scalper_chart',
+      return NeoChartsRepository(
         liveDataEnabled: config.liveDataEnabled,
         streamRate: config.streamRate,
         benchmarkBarCount: config.datasetSize.candleCount,
       );
     }
 
-    // NxtChartPage.dispose() disposes whatever interface it was given --
-    // closing the chart and reopening the same (now-disposed) instance
-    // left every stream permanently dead (LTP/Chng% frozen at their last
-    // value forever). A real end-user open gets a brand new session each
-    // time; a test's pre-seeded override is reused as-is, since it never
-    // reopens within the same test.
-    return widget.interfaceOverride ??
-        NxtChartRepository(storageKey: 'scalper_chart');
+    // NeoChartPage disposes its host on unmount, so each open gets a fresh
+    // one; a test's pre-seeded override is reused as-is.
+    return widget.hostOverride ?? NeoChartsRepository();
   }
 
   @override
@@ -195,13 +183,14 @@ class _HomePageState extends State<HomePage> {
                                 Color(0xFF00C6A2),
                               ],
                               onTap: () {
+                                // Built once here: a route rebuild must not
+                                // hand the page a different host.
+                                final host = _resolveHost();
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => NxtScalperChartScreen(
-                                      dataProvider: _resolveInterface(),
-                                      widgetOverrides: widget.widgetOverrides,
-                                    ),
+                                    builder: (context) =>
+                                        NeoChartScreen(host: host),
                                   ),
                                 );
                               },
@@ -216,12 +205,12 @@ class _HomePageState extends State<HomePage> {
                                 Color(0xFF4B8BFF),
                               ],
                               onTap: () {
+                                final host = _resolveHost();
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => UniChartScreen(
-                                      dataProvider: _resolveInterface(),
-                                    ),
+                                    builder: (context) =>
+                                        UniChartScreen(host: host),
                                   ),
                                 );
                               },

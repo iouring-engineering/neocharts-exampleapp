@@ -1,227 +1,347 @@
 package com.example.example_android
 
 import android.content.Context
-import org.json.JSONArray
-import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.exp
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.roundToLong
 import kotlin.random.Random
 
-/**
- * Reads the shared fixture (bundled as res/raw/{symbols,oi,orders,positions,
- * oco_orders}, symlinked from apps/mock/) and serves it as plain reads, plus
- * this platform's own native live-tick and candle-walk generation widened to
- * every symbol in the fixture.
- */
-class MockDataSource(context: Context) {
+typealias Row = Map<String, Any?>
 
-    private val fixture: JSONObject = JSONObject().apply {
-        for (raw in listOf(
-            R.raw.symbols, R.raw.oi, R.raw.orders, R.raw.positions, R.raw.oco_orders
-        )) {
-            val part = JSONObject(
-                context.resources.openRawResource(raw)
-                    .bufferedReader()
-                    .use { it.readText() }
-            )
-            part.keys().forEach { key -> put(key, part.get(key)) }
-        }
-    }
+/** A wire number: a JSON number, a numeric string, else 0. */
+internal fun num(value: Any?): Double = when (value) {
+    is Number -> value.toDouble()
+    is String -> value.toDoubleOrNull() ?: 0.0
+    else -> 0.0
+}
+
+internal fun round2(v: Double) = (v * 100).roundToLong() / 100.0
+
+/**
+ * Reads the shared fixture (apps/mock/{symbols,oi,orders,positions,oco_orders,
+ * session}.json; bundled as res/raw symlinks) and serves per-id reads, plus
+ * this platform's own candle and tick generation. [readFixture] maps a file
+ * name (without .json) to its text, so tests can read apps/mock/ directly.
+ */
+class MockDataSource(readFixture: (String) -> String) {
+
+    private val symbols = Json.parseObject(readFixture("symbols"))
+    private val analytics = Json.parseObject(readFixture("oi"))
+    private val sessionFixture = Json.parseObject(readFixture("session"))
+    private val seeds: Row = listOf("orders", "positions", "oco_orders")
+        .fold(emptyMap()) { acc, name -> acc + Json.parseObject(readFixture(name)) }
 
     init {
-        val requiredKeys = listOf(
-            "niftySymbol", "optionChain", "futureSymbols", "indexSymbols",
-            "basePrices", "topOptionsByVolume", "oi", "pcrIntraday",
-            "atmStraddleIntraday", "atmIvIntraday", "seedOrders",
-            "seedPositions", "seedOcoOrders"
+        val required = listOf(
+            "optionChain", "futureSymbols", "indexSymbols", "equitySymbols",
+            "basePrices", "topOptionsByUnderlying"
         )
-        for (key in requiredKeys) {
-            check(fixture.has(key)) { "mock fixture is missing required key: $key" }
+        for (key in required) check(symbols.containsKey(key)) { "symbols.json is missing $key" }
+        for (key in listOf("seedOrders", "seedPositions", "seedOcoOrders")) {
+            check(seeds.containsKey(key)) { "mock fixture is missing $key" }
         }
     }
 
-    private val niftySymbol: JSONObject = fixture.getJSONObject("niftySymbol")
-    private val optionChain: JSONArray = fixture.getJSONArray("optionChain")
-    private val futureSymbolsArray: JSONArray = fixture.getJSONArray("futureSymbols")
-    private val basePrices: JSONObject = fixture.getJSONObject("basePrices")
+    @Suppress("UNCHECKED_CAST")
+    private fun rows(key: String): List<Row> = listOf(symbols, seeds).firstNotNullOf { it[key] } as List<Row>
 
-    private val livePrices = mutableMapOf<String, Double>()
-    private fun priceFor(symbolId: String): Double =
-        livePrices.getOrPut(symbolId) { basePrices.optDouble(symbolId, 22600.0) }
+    private val optionRows = rows("optionChain")
+    private val futureRows = rows("futureSymbols")
+    private val indexRows = rows("indexSymbols")
+    private val equityRows = rows("equitySymbols")
+    private val basePrices = symbols["basePrices"] as Map<*, *>
+
+    private val allRows = optionRows + futureRows + indexRows + equityRows
+    private val byId: Map<String, Row> = allRows.associateBy { it["id"] as String }
+
+    private fun basePrice(id: String): Double = (basePrices[id] as? Number)?.toDouble() ?: 22600.0
 
     // -------------------------------------------------------------------
-    // Static fixture reads
+    // Session and symbol reads
     // -------------------------------------------------------------------
 
-    fun symbolInfo(): String = niftySymbol.toString()
-
-    /** Exchange calendar. `sessions` is a list indexed by weekday (0 = Monday
-     * ... 6 = Sunday), each entry a list of "HHMM-HHMM" ranges and an empty
-     * list for a non-trading day -- see MarketTiming.fromJson in
-     * lib/src/models/market_timing.dart. */
-    // Open every hour of every day -- a real exchange trades ~6h on weekdays
-    // only, but this is a demo: it should show live movement no matter when
-    // someone runs it, not just 09:15-15:30 IST on a weekday.
-    fun marketTimings(): String {
-        val sessions = JSONArray()
-        for (weekday in 0 until 7) {
-            val daySessions = JSONArray()
-            daySessions.put("0000-2359")
-            sessions.put(daySessions)
-        }
-        val nse = JSONObject().apply {
-            put("timezone", "Asia/Kolkata")
-            put("sessions", sessions)
-            put("holidays", JSONArray())
-            put("special", JSONObject())
-        }
-        return JSONObject().apply { put("NSE", nse) }.toString()
+    /** session.json with `initialSymbolId` resolved into `initialSymbol`, plus the index symbols. */
+    fun session(): Row {
+        val initialId = sessionFixture["initialSymbolId"] as String
+        val initial = checkNotNull(symbol(initialId)) { "session.json: unknown initialSymbolId $initialId" }
+        return sessionFixture - "initialSymbolId" + ("initialSymbol" to initial) + ("indexSymbols" to indexRows)
     }
 
-    fun futureSymbols(): String = futureSymbolsArray.toString()
-    fun indexSymbols(): String = fixture.getJSONArray("indexSymbols").toString()
-    /** The bare option chain -- MKTDataInterface.optionSymbols' contract. */
-    fun optionSymbols(): String = optionChain.toString()
+    fun symbol(id: String): Row? = byId[id]
 
-    /** The option chain with the underlying's own symbol info prepended.
-     * MKTDataInterface.fetchOptionDetails requires the first element to be the
-     * spot symbol (the one entry without an "optType") so the chart can
-     * resolve the spot price. */
-    fun fetchOptionDetails(): String {
-        val withUnderlying = JSONArray()
-        withUnderlying.put(niftySymbol)
-        for (i in 0 until optionChain.length()) {
-            withUnderlying.put(optionChain.get(i))
-        }
-        return withUnderlying.toString()
-    }
-    fun chartTopOptions(): String = fixture.getJSONArray("topOptionsByVolume").toString()
-
-    fun fetchOI(): String = fixture.getJSONObject("oi").getJSONObject("byStrike").toString()
-    fun fetchOIChange(): String =
-        fixture.getJSONObject("oi").getJSONObject("changeByStrike").toString()
-    fun fetchOIAnalysis(): String =
-        fixture.getJSONObject("oi").getJSONObject("analysisAroundAtm").toString()
-
-    fun fetchPcrIntraday(): String = withResolvedTimes(fixture.getJSONArray("pcrIntraday")).toString()
-    fun fetchAtmIvIntraday(): String = withResolvedTimes(fixture.getJSONArray("atmIvIntraday")).toString()
-
-    fun fetchAtmStraddleIntraday(): String {
-        val source = fixture.getJSONObject("atmStraddleIntraday")
-        val resolved = JSONObject()
-        source.keys().forEach { expiry ->
-            resolved.put(expiry, withResolvedTimes(source.getJSONArray(expiry)))
-        }
-        return resolved.toString()
+    /** Total: an underlying (or an unknown id) resolves to itself. */
+    fun underlyingOf(symbolId: String): Row {
+        val symbol = byId[symbolId] ?: return mapOf("id" to symbolId)
+        val undId = symbol["undID"] as? String ?: return symbol
+        return (indexRows + equityRows).firstOrNull { it["id"] == undId } ?: symbol
     }
 
-    /** Rewrites each row's "offsetMinutes" into an absolute "time" (ms epoch) so the series always looks live relative to now. */
-    private fun withResolvedTimes(rows: JSONArray): JSONArray {
+    fun optionChain(underlyingId: String): List<Row> = optionRows.filter { it["undID"] == underlyingId }
+
+    fun futures(underlyingId: String): List<Row> = futureRows.filter { it["undID"] == underlyingId }
+
+    fun searchSymbols(query: String): List<Row> {
+        val keyword = query.trim().lowercase()
+        if (keyword.isEmpty()) return emptyList()
+        return allRows.filter {
+            (it["name"] as String).lowercase().contains(keyword) ||
+                (it["id"] as String).lowercase().contains(keyword)
+        }
+    }
+
+    fun topOptions(underlyingId: String): List<Any?> =
+        (symbols["topOptionsByUnderlying"] as Map<*, *>)[underlyingId] as? List<*> ?: emptyList<Any?>()
+
+    // -------------------------------------------------------------------
+    // Margin and brokerage previews (the formulas every example app shares)
+    // -------------------------------------------------------------------
+
+    /** Full order value, or 20% of it for intraday; null when unpriceable. */
+    fun margin(symbolId: String, lots: Int, ltp: Double, productType: String?): Double? {
+        val symbol = byId[symbolId] ?: return null
+        if (lots <= 0 || ltp <= 0) return null
+        val lotSize = (symbol["lotSize"] as? Number)?.toDouble() ?: 1.0
+        val share = if (productType == "intraday") 0.2 else 1.0
+        return lots * lotSize * ltp * share
+    }
+
+    /** 0.03% of the order value (quantity in units), capped at 20; null when unpriceable. */
+    fun brokerage(symbolId: String, quantity: Int, price: Double): Double? {
+        if (byId[symbolId] == null || quantity <= 0 || price <= 0) return null
+        return min(quantity * price * 0.0003, 20.0)
+    }
+
+    // -------------------------------------------------------------------
+    // OI and intraday analytics, per underlying (null when it has none)
+    // -------------------------------------------------------------------
+
+    private fun analyticsFor(underlyingId: String): Map<*, *>? = analytics[underlyingId] as? Map<*, *>
+    private fun oiTable(underlyingId: String, key: String): Any? =
+        (analyticsFor(underlyingId)?.get("oi") as? Map<*, *>)?.get(key)
+
+    fun oiAnalysis(underlyingId: String): Any? = oiTable(underlyingId, "analysisAroundAtm")
+    fun oiChange(underlyingId: String): Any? = oiTable(underlyingId, "changeByStrike")
+    fun oi(underlyingId: String): Any? = oiTable(underlyingId, "byStrike")
+
+    fun pcrIntraday(underlyingId: String): List<Row>? =
+        (analyticsFor(underlyingId)?.get("pcrIntraday") as? List<*>)?.let(::withResolvedTimes)
+
+    fun atmIvIntraday(underlyingId: String): List<Row>? =
+        (analyticsFor(underlyingId)?.get("atmIvIntraday") as? List<*>)?.let(::withResolvedTimes)
+
+    fun atmStraddleIntraday(underlyingId: String): Row? =
+        (analyticsFor(underlyingId)?.get("atmStraddleIntraday") as? Map<*, *>)
+            ?.entries?.associate { (expiry, rows) -> expiry as String to withResolvedTimes(rows as List<*>) }
+
+    /** Rewrites each row's "offsetMinutes" into an absolute "time" (ms epoch), so the series looks live. */
+    @Suppress("UNCHECKED_CAST")
+    private fun withResolvedTimes(rows: List<*>): List<Row> {
         val now = System.currentTimeMillis()
-        val resolved = JSONArray()
-        for (i in 0 until rows.length()) {
-            val row = JSONObject(rows.getJSONObject(i).toString())
-            val offsetMinutes = row.getLong("offsetMinutes")
-            row.remove("offsetMinutes")
-            row.put("time", now - offsetMinutes * 60_000)
-            resolved.put(row)
+        return rows.map { row ->
+            val map = row as Row
+            map - "offsetMinutes" + ("time" to now - (map["offsetMinutes"] as Number).toLong() * 60_000)
         }
-        return resolved
     }
 
-    fun seedOrders(): String {
-        val rows = withSymbolAttached(fixture.getJSONArray("seedOrders"))
-        for (i in 0 until rows.length()) {
-            val row = rows.getJSONObject(i)
-            if (row.has("ordTimeOffsetMinutes")) {
-                val offsetMinutes = row.getLong("ordTimeOffsetMinutes")
-                row.remove("ordTimeOffsetMinutes")
-                row.put("ordTime", formatOrdTime(offsetMinutes))
-            }
-        }
-        return rows.toString()
-    }
-    fun seedPositions(): String = withSymbolAttached(fixture.getJSONArray("seedPositions")).toString()
-    // No seedOcoOrders() reader: this host reports hasOCO = false and doesn't
-    // implement place/modify/cancelOCOOrder, so seeding an OCO marker the user
-    // could drag would only surface a not-implemented failure.
+    // -------------------------------------------------------------------
+    // Seeds, each row given its `symbol`
+    // -------------------------------------------------------------------
 
-    private fun withSymbolAttached(rows: JSONArray): JSONArray {
-        val result = JSONArray()
-        for (i in 0 until rows.length()) {
-            val row = JSONObject(rows.getJSONObject(i).toString())
-            row.put("symbol", niftySymbol)
-            result.put(row)
-        }
-        return result
+    fun seedOrders(): List<MutableMap<String, Any?>> = rows("seedOrders").map { row ->
+        val order = (row - "symID" - "ordTimeOffsetMinutes").toMutableMap()
+        order["symbol"] = byId[row["symID"] as String]
+        (row["ordTimeOffsetMinutes"] as? Number)?.let { order["ordTime"] = formatOrdTime(it.toLong()) }
+        order
     }
 
-    /** Resolves an "ordTimeOffsetMinutes" fixture field into the "DD-MM-YYYY HH:mm:ss" string
-     * order consumers expect for "ordTime" (see TradeInterface.ordersStreamer doc). */
+    fun seedPositions(): List<MutableMap<String, Any?>> = rows("seedPositions").map { row ->
+        (row + ("symbol" to byId[row["symID"] as String])).toMutableMap()
+    }
+
+    fun seedOcoOrders(): List<MutableMap<String, Any?>> = rows("seedOcoOrders").map { it.toMutableMap() }
+
     private val ordTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
-    private fun formatOrdTime(offsetMinutes: Long): String {
+
+    /** The "dd-MM-yyyy HH:mm:ss" string `Order.ordTime` expects, [offsetMinutes] ago. */
+    fun formatOrdTime(offsetMinutes: Long): String {
         val instant = Instant.ofEpochMilli(System.currentTimeMillis() - offsetMinutes * 60_000)
         return LocalDateTime.ofInstant(instant, ZoneId.systemDefault()).format(ordTimeFormatter)
     }
 
     // -------------------------------------------------------------------
-    // Native live generation, widened to every fixture symbol
+    // Candles and ticks: one deterministic curve per symbol, so reloads and
+    // live ticks agree
     // -------------------------------------------------------------------
 
-    fun generateOhlcv(symbolId: String, intervalSeconds: Int, barCount: Int): String {
-        val interval = intervalSeconds * 1000L
-        val endTime = System.currentTimeMillis()
-        val bars = JSONArray()
-        var price = priceFor(symbolId)
-
-        for (i in barCount - 1 downTo 0) {
-            val ts = endTime - i * interval
-            val open = price
-            val change = (Random.nextDouble() - 0.48) * (open * 0.002)
-            val close = max(1.0, open + change)
-            val high = max(open, close) + Random.nextDouble() * (open * 0.001)
-            val low = max(0.5, min(open, close) - Random.nextDouble() * (open * 0.001))
-            val volume = (1000 + Random.nextInt(5000)).toDouble()
-            bars.put(JSONArray().apply {
-                put(ts); put(open); put(high); put(low); put(close); put(volume)
-            })
-            price = close
-        }
-        livePrices[symbolId] = price
-        return bars.toString()
+    private fun seededUnit(seed: String): Double {
+        var h = -2128831035 // FNV-1a offset basis
+        for (c in seed) h = (h xor c.code) * 16777619
+        return (h.toLong() and 0xFFFFFFFFL) / 4294967296.0
     }
 
-    /** One tick per symbol: spot, then every option, then every future -- matching MockChartDataSource.generateTicks()'s breadth. */
-    fun nextTicks(): String {
-        val ticks = JSONArray()
-        ticks.put(tickFor(niftySymbol.getString("id")))
-        for (i in 0 until optionChain.length()) {
-            ticks.put(tickFor(optionChain.getJSONObject(i).getString("id")))
-        }
-        for (i in 0 until futureSymbolsArray.length()) {
-            ticks.put(tickFor(futureSymbolsArray.getJSONObject(i).getString("id")))
-        }
-        return ticks.toString()
+    private fun latticeNoise(symbolId: String, ts: Long, spacingMs: Long): Double {
+        val n = floor(ts.toDouble() / spacingMs).toLong()
+        val frac = ts.toDouble() / spacingMs - n
+        val a = seededUnit("$symbolId:$spacingMs:$n") * 2 - 1
+        val b = seededUnit("$symbolId:$spacingMs:${n + 1}") * 2 - 1
+        val smooth = frac * frac * (3 - 2 * frac)
+        return a + (b - a) * smooth
     }
 
-    private fun tickFor(symbolId: String): JSONObject {
-        val base = basePrices.optDouble(symbolId, 22600.0)
-        var price = priceFor(symbolId)
-        price += (Random.nextDouble() - 0.48) * (base * 0.001)
-        price = max(0.05, price)
-        livePrices[symbolId] = price
-        val ltp = "%.2f".format(price).toDouble()
-        return JSONObject().apply {
-            put("symbolId", symbolId)
-            put("ltp", ltp)
-            put("ltq", 10 + Random.nextInt(50))
-            put("chng", "%.2f".format(ltp - base).toDouble())
-            put("chngPer", "%.2f".format((ltp - base) / base * 100).toDouble())
-            put("ltt", System.currentTimeMillis())
+    private fun priceAt(symbolId: String, ts: Long): Double {
+        val base = basePrice(symbolId)
+        val wave = latticeNoise(symbolId, ts, 20 * 60_000L) * (base * 0.012) +
+            latticeNoise(symbolId, ts, 3 * 60_000L) * (base * 0.005) +
+            latticeNoise(symbolId, ts, 20_000L) * (base * 0.0015)
+        return max(0.5, base + wave)
+    }
+
+    /**
+     * `[[time, open, high, low, close, volume], ...]`, the last bar holding
+     * [to]. Bar times sit on the interval grid; high and low are the curve's
+     * extremes inside the bar and volume is seeded per bar, so every load of
+     * the same range returns the same bars.
+     */
+    fun candles(symbolId: String, intervalSeconds: Int, count: Int, to: Long): List<List<Number>> {
+        val intervalMs = intervalSeconds * 1000L
+        val last = Math.floorDiv(to, intervalMs) * intervalMs
+        return (count - 1 downTo 0).map { i ->
+            val ts = last - i * intervalMs
+            val samples = listOf(0.0, 0.25, 0.5, 0.75, 1.0).map { priceAt(symbolId, ts + (intervalMs * it).toLong()) }
+            val volume = 1000 + floor(seededUnit("$symbolId:vol:$ts") * 5000).toInt()
+            listOf(ts, samples.first(), samples.max(), samples.min(), samples.last(), volume)
+        }
+    }
+
+    private var subscribed: Set<String> = emptySet()
+    private val lastPrices = mutableMapOf<String, Double>()
+
+    /** The complete desired set: replaces, never adds. */
+    fun subscribe(symbolIds: Set<String>) {
+        subscribed = symbolIds.toSet()
+    }
+
+    /** The last ticked price, else the curve's price now. */
+    fun priceOf(symbolId: String): Double =
+        lastPrices[symbolId] ?: priceAt(symbolId, System.currentTimeMillis())
+
+    /** One tick per subscribed symbol id. */
+    fun nextTicks(): List<Row> = subscribed.map(::tickFor)
+
+    private fun tickFor(symbolId: String): Row {
+        val base = basePrice(symbolId)
+        val now = System.currentTimeMillis()
+        val ltp = round2(max(0.05, priceAt(symbolId, now) + (Random.nextDouble() - 0.5) * (base * 0.0006)))
+        lastPrices[symbolId] = ltp
+        return mapOf(
+            "symbolId" to symbolId,
+            "ltp" to ltp,
+            "ltq" to 10 + Random.nextInt(50),
+            "chng" to round2(ltp - base),
+            "chngPer" to round2((ltp - base) / base * 100),
+            "ltt" to now,
+        ) + optionOiFields(symbolId) + depthFor(symbolId, ltp)
+    }
+
+    // -------------------------------------------------------------------
+    // Market depth: 5 bid/ask levels around the tick's ltp, plus day stats
+    // (the web example's generator)
+    // -------------------------------------------------------------------
+
+    private class DayStats(val open: Double, var high: Double, var low: Double, var volume: Double, var turnover: Double)
+
+    // Day high/low/volume only widen or accumulate, so they outlive each book snapshot.
+    private val dayStats = mutableMapOf<String, DayStats>()
+
+    private fun roundToTick(value: Double, tick: Double) = Math.round(Math.round(value / tick) * tick * 1e4) / 1e4
+
+    private fun depthSide(start: Double, tick: Double, direction: Int): List<Row> = (0 until DEPTH_LEVELS).map { i ->
+        // Resting size thins out away from the touch, like a real book.
+        val qty = ((1300 - i * 250) * (0.6 + Random.nextDouble() * 0.8)).roundToLong()
+        mapOf(
+            "price" to roundToTick(start + direction * i * tick, tick),
+            "qty" to qty,
+            "orders" to max(1L, (qty / 180.0 + Random.nextDouble() * 2).roundToLong()),
+        )
+    }
+
+    /** Order-book fields merged onto a tick; each is a full snapshot, not a delta. */
+    private fun depthFor(symbolId: String, ltp: Double): Row {
+        val base = basePrice(symbolId)
+        val tick = (byId[symbolId]?.get("tickSize") as? Number)?.toDouble()?.takeIf { it > 0 } ?: 0.05
+        val price = roundToTick(max(tick, ltp), tick)
+        val stats = dayStats.getOrPut(symbolId) {
+            val open = roundToTick(base * (1 + (seededUnit("$symbolId:open") - 0.5) * 0.01), tick)
+            val volume = 1_000_000 * (1 + seededUnit("$symbolId:vol"))
+            DayStats(open, open, open, volume, volume * open)
+        }
+        stats.high = max(stats.high, price)
+        stats.low = min(stats.low, price)
+        val ltq = 1 + Random.nextInt(100)
+        stats.volume += ltq
+        stats.turnover += ltq * price
+
+        val bids = depthSide(price - tick, tick, -1)
+        val asks = depthSide(price + tick, tick, 1)
+        // Totals cover the whole book, not just the five visible levels.
+        fun bookTotal(levels: List<Row>) =
+            (levels.sumOf { it["qty"] as Long } * (1.4 + Random.nextDouble() * 0.4)).roundToLong()
+        return mapOf(
+            "bids" to bids,
+            "asks" to asks,
+            "totalBuyQty" to bookTotal(bids),
+            "totalSellQty" to bookTotal(asks),
+            "open" to stats.open,
+            "high" to stats.high,
+            "low" to stats.low,
+            "prevClose" to base,
+            "avgTradePrice" to roundToTick(stats.turnover / stats.volume, tick),
+            "ltq" to ltq,
+        )
+    }
+
+    // OI and volume on an option tick, for the chain's OI columns: the
+    // fixture's per-strike table (else a bell around the ATM), jittered.
+    private fun optionOiFields(symbolId: String): Row {
+        val option = byId[symbolId] ?: return emptyMap()
+        val strikeKey = option["strike"] as? String ?: return emptyMap()
+        val side = if (option["optType"] == "CE") "calls" else "puts"
+        val undId = option["undID"] as? String ?: ""
+        val strike = strikeKey.toDouble()
+        fun table(key: String) = ((oiTable(undId, key) as? Map<*, *>)?.get(side) as? Map<*, *>)?.get(strikeKey) as? Number
+
+        val fallback = 120_000 * exp(-((strike - basePrice(undId)) / 400).pow(2)) + 20_000
+        val baseOi = table("byStrike")?.toDouble() ?: fallback
+        val liveOi = (baseOi * (1 + (Random.nextDouble() - 0.5) * 0.01)).roundToLong()
+        val magnitude = table("changeByStrike")?.toLong() ?: (baseOi * 0.03).roundToLong()
+        val oiChng = if ((strike / 50) % 3 == 0.0) -magnitude else magnitude
+        val prevOi = liveOi - oiChng
+        return mapOf(
+            "OI" to liveOi,
+            "oiChng" to oiChng,
+            "oiChngPer" to if (prevOi > 0) round2(oiChng.toDouble() / prevOi * 100) else 0.0,
+            "vol" to (baseOi * 0.4 * (1 + Random.nextDouble() * 0.05)).roundToLong(),
+        )
+    }
+
+    companion object {
+        private const val DEPTH_LEVELS = 5
+
+        private val rawIds = mapOf(
+            "symbols" to R.raw.symbols, "oi" to R.raw.oi, "orders" to R.raw.orders,
+            "positions" to R.raw.positions, "oco_orders" to R.raw.oco_orders, "session" to R.raw.session,
+        )
+
+        /** The fixture bundled as res/raw. */
+        fun fromRawResources(context: Context) = MockDataSource { name ->
+            context.resources.openRawResource(rawIds.getValue(name)).bufferedReader().use { it.readText() }
         }
     }
 }

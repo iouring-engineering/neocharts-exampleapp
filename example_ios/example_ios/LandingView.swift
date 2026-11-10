@@ -27,7 +27,8 @@ private let lightCardColor = Color(hex: 0xFCF8FF)
 private let darkCardColor = Color(hex: 0x141318)
 
 struct LandingView: View {
-    let onOpenChart: () -> Void
+    /// Gets the page's brightness (true = dark), which the chart opens in.
+    let onOpenChart: (_ dark: Bool) -> Void
     @State private var isDark = true
 
     private var textColor: Color { isDark ? .white : Color(hex: 0x0A0A12) }
@@ -164,6 +165,6 @@ struct LandingView: View {
         .clipShape(RoundedRectangle(cornerRadius: 28))
         .shadow(color: cardGradientStart.opacity(0.20), radius: 30, x: 0, y: 15)
         .contentShape(Rectangle())
-        .onTapGesture(perform: onOpenChart)
+        .onTapGesture { onOpenChart(isDark) }
     }
 }

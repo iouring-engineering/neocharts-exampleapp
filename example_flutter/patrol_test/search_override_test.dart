@@ -1,7 +1,8 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nxtchart/src/interface/market_data_interface.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
+import 'package:nxtchart/interface.dart' show SymbolInfo;
 import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:nxtchart/widgets.dart';
@@ -17,9 +18,8 @@ String? chartedId(PatrolIntegrationTester $) => $.tester
     .element(find.byKey(Key(ChartTestKeys.symbolSearchBtn)))
     .read<ChartBloc>()
     .state
-    .dataProvider
-    ?.parseSymInfo
-    .id;
+    .symbol
+    ?.id;
 
 void main() {
   group('Host search override', () {
@@ -27,7 +27,10 @@ void main() {
       $,
     ) async {
       var opened = 0;
-      void Function(String)? pick;
+      void Function(SymbolInfo)? pick;
+      final repo = NeoChartsRepository(liveDataEnabled: false);
+      addTearDown(repo.dispose);
+      final indiaVix = (await repo.searchSymbols('INDIAVIX')).first;
       await openChartWithOverridesAndAwaitLoad(
         $,
         NeoChartWidgetOverrides(
@@ -44,7 +47,7 @@ void main() {
       expect(find.byKey(Key(ChartTestKeys.symbolSearchField)), findsNothing);
       expect(chartedId($), before);
 
-      pick!('INDIAVIX');
+      pick!(indiaVix);
       await $.pumpAndSettle();
       expect(chartedId($), 'INDIAVIX');
     });

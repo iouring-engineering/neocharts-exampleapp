@@ -1,7 +1,7 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
+import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 
 void main() {
   testWidgets('Home page shows the chart workspace options', (
@@ -10,9 +10,12 @@ void main() {
     await tester.pumpWidget(const ChartTemplateApp());
     await tester.pump();
 
-    expect(find.text('NeoCharts'), findsOneWidget);
-    expect(find.text('Scalper Charts'), findsOneWidget);
-    expect(find.text('Single Chart'), findsOneWidget);
+    final card = find.byType(ChartCard);
+    expect(
+      find.descendant(of: card, matching: find.text('NeoCharts')),
+      findsOneWidget,
+    );
+    expect(find.text('Fast charts for precision entries'), findsOneWidget);
   });
 
   testWidgets('Theme toggle switches between light and dark', (

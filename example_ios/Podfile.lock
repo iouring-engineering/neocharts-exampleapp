@@ -2,7 +2,10 @@ PODS:
   - Flutter (1.0.0)
   - FlutterPluginRegistrant (0.0.1):
     - Flutter
+    - package_info_plus
     - shared_preferences_foundation
+  - package_info_plus (0.4.5):
+    - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -10,6 +13,7 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `../../.ios/Flutter`)
   - FlutterPluginRegistrant (from `../../.ios/Flutter/FlutterPluginRegistrant`)
+  - package_info_plus (from `../../.ios/.symlinks/plugins/package_info_plus/ios`)
   - shared_preferences_foundation (from `../../.ios/.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 EXTERNAL SOURCES:
@@ -17,12 +21,15 @@ EXTERNAL SOURCES:
     :path: "../../.ios/Flutter"
   FlutterPluginRegistrant:
     :path: "../../.ios/Flutter/FlutterPluginRegistrant"
+  package_info_plus:
+    :path: "../../.ios/.symlinks/plugins/package_info_plus/ios"
   shared_preferences_foundation:
     :path: "../../.ios/.symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
-  FlutterPluginRegistrant: 79d7255c8390e67995b8214aee5e6d8c462a75a2
+  FlutterPluginRegistrant: 5af044e3c37357a03c6128231d02b4f9ed62181e
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
 
 PODFILE CHECKSUM: 15345408cdd5fa241606f67823b64dff12f69bf1
