@@ -1,21 +1,14 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:neocharts_exampleapp/presentation/pages/home/home_page.dart';
-import 'package:nxtchart/interface.dart';
 
 class ChartTemplateApp extends StatefulWidget {
-  const ChartTemplateApp({
-    super.key,
-    this.interfaceOverride,
-    this.onInitDone,
-    this.onInitError,
-  });
+  const ChartTemplateApp({super.key, this.hostOverride, this.onInitDone});
 
-  /// Test-only: substitutes the [ChartInterface] this app would otherwise
-  /// construct itself, so a test can hold a reference to seed data on it.
-  final ChartInterface? interfaceOverride;
+  /// Test-only: substitutes the host this app would otherwise construct
+  /// itself, so a test can hold a reference to seed data on it.
+  final NeoChartsRepository? hostOverride;
   final void Function()? onInitDone;
-  final void Function(Object)? onInitError;
 
   @override
   State<ChartTemplateApp> createState() => _ChartTemplateAppState();
@@ -24,24 +17,16 @@ class ChartTemplateApp extends StatefulWidget {
 class _ChartTemplateAppState extends State<ChartTemplateApp> {
   ThemeMode _themeMode = ThemeMode.dark;
 
-  ChartInterface? _interface;
-
   @override
   void initState() {
     super.initState();
-    try {
-      _interface =
-          widget.interfaceOverride ??
-          NxtChartRepository(storageKey: 'scalper_chart');
-      widget.onInitDone?.call();
-    } catch (e) {
-      widget.onInitError?.call(e);
-    }
+    // HomePage builds a host per chart open, so none is built here.
+    widget.onInitDone?.call();
   }
 
   @override
   void dispose() {
-    _interface?.dispose();
+    widget.hostOverride?.dispose();
     super.dispose();
   }
 
@@ -55,8 +40,6 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
 
   @override
   Widget build(BuildContext context) {
-    final interface = _interface;
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Chart Studio',
@@ -84,15 +67,11 @@ class _ChartTemplateAppState extends State<ChartTemplateApp> {
         fontFamily: 'Roboto',
       ),
 
-      home: interface == null
-          ? const Scaffold(
-              body: Center(child: Text('Failed to initialize the chart.')),
-            )
-          : HomePage(
-              onToggleTheme: _toggleTheme,
-              isDark: _themeMode == ThemeMode.dark,
-              interfaceOverride: widget.interfaceOverride,
-            ),
+      home: HomePage(
+        onToggleTheme: _toggleTheme,
+        isDark: _themeMode == ThemeMode.dark,
+        hostOverride: widget.hostOverride,
+      ),
     );
   }
 }

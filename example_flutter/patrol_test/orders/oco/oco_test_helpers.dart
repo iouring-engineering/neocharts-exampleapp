@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/src/presentation/widgets/custom_checkbox.dart';
 import 'package:nxtchart/src/presentation/widgets/custom_stepper_field.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
@@ -14,7 +14,7 @@ import '../../helpers.dart';
 // New OCO placement has no button anywhere in the app -- it only happens
 // by dragging an existing position's SL or TP price-line handle on the
 // chart canvas. That in turn requires a real open position, seeded here
-// via NxtChartRepository.seedPosition -- positions and OCO orders are
+// via NeoChartsRepository.seedPosition -- positions and OCO orders are
 // both backed by real in-memory state on the repository.
 //
 // The position tag and its SL/TP drag handles all carry real ChartTestKeys
@@ -24,7 +24,7 @@ import '../../helpers.dart';
 
 const ocoPositionId = 'NIFTY_normal';
 
-// Pumps the app against a fresh NxtChartRepository, opens the chart, then
+// Pumps the app against a fresh NeoChartsRepository, opens the chart, then
 // seeds one open long position. Live data is off by default so the
 // chart's tick never updates -- the SL/TP-vs-LTP validity check only
 // applies once a live tick exists, so leaving live data (and therefore the
@@ -35,17 +35,14 @@ const ocoPositionId = 'NIFTY_normal';
 // price when none is given, so the position's marker (and therefore its
 // SL/TP drag handles) is always built somewhere within the visible y-axis
 // range.
-Future<NxtChartRepository> openChartWithMockPosition(
+Future<NeoChartsRepository> openChartWithMockPosition(
   PatrolIntegrationTester $, {
   bool liveDataEnabled = false,
   int netQty = 75,
   double? avgPrice,
 }) async {
-  final mock = NxtChartRepository(
-    storageKey: 'scalper_chart',
-    liveDataEnabled: liveDataEnabled,
-  );
-  await openChartAndAwaitLoad($, interfaceOverride: mock);
+  final mock = NeoChartsRepository(liveDataEnabled: liveDataEnabled);
+  await openChartAndAwaitLoad($, hostOverride: mock);
   mock.seedPosition(netQty: netQty, avgPrice: avgPrice);
   return mock;
 }

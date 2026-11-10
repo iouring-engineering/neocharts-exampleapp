@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
@@ -8,7 +8,7 @@ import '../helpers.dart';
 import 'analysis_test_helpers.dart';
 
 // OI Analysis tab:
-//   - NxtChartRepository.fetchOIAnalysis returns real synthetic per-strike
+//   - NeoChartsRepository.fetchOIAnalysis returns real synthetic per-strike
 //     call/put OI (plus change/prevOi) data, so this tab's chart, legend,
 //     and summary row all render live content -- not just the fallback
 //     "No data available" state.

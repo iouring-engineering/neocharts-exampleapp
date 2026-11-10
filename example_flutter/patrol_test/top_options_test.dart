@@ -1,12 +1,12 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
 import 'helpers.dart';
 
 // Top 5 Options panel:
-//   - NxtChartRepository.chartTopOptions returns the top-volume strikes, so
+//   - NeoChartsRepository.fetchTopOptions returns the top-volume strikes, so
 //     the list is meant to render real content by default -- not just the
 //     "No data available" empty state.
 //   - marketDataStreamer emits synthetic per-symbol ticks for whichever
@@ -18,7 +18,7 @@ import 'helpers.dart';
 // KNOWN-OPEN: as of this port, the panel's content does not actually render
 // after opening (the "Top 5 Options" text and PE/CE tabs are never found in
 // the tree). Root cause not yet confirmed -- ruled out so far: a data-shape
-// mismatch in chartTopOptions's response, and a localization-delegate
+// mismatch in fetchTopOptions's response, and a localization-delegate
 // registration gap. The assertions below describe the intended behavior,
 // not currently-passing behavior.
 

@@ -26,6 +26,7 @@ import 'benchmark_perf_test.dart' as benchmark_perf_test;
 import 'chart_type_switching_test.dart' as chart_type_switching_test;
 import 'indicator_toggling_test.dart' as indicator_toggling_test;
 import 'interval_switching_test.dart' as interval_switching_test;
+import 'ltp_highlow_check_test.dart' as ltp_highlow_check_test;
 import 'main_chart_indicators_test.dart' as main_chart_indicators_test;
 import 'option_chain_test.dart' as option_chain_test;
 import 'order_preferences_test.dart' as order_preferences_test;
@@ -59,6 +60,9 @@ import 'positions/position_chart_drag_test.dart'
     as positions__position_chart_drag_test;
 import 'positions/positions_list_test.dart' as positions__positions_list_test;
 import 'range_switching_test.dart' as range_switching_test;
+import 'requested_indicators_test.dart' as requested_indicators_test;
+import 'search_override_test.dart' as search_override_test;
+import 'subchart_indicators_test.dart' as subchart_indicators_test;
 import 'top_options_test.dart' as top_options_test;
 import 'trading_test.dart' as trading_test;
 import 'uni_chart_test.dart' as uni_chart_test;
@@ -83,6 +87,7 @@ void main() {
   group('chart_type_switching_test', chart_type_switching_test.main);
   group('indicator_toggling_test', indicator_toggling_test.main);
   group('interval_switching_test', interval_switching_test.main);
+  group('ltp_highlow_check_test', ltp_highlow_check_test.main);
   group('main_chart_indicators_test', main_chart_indicators_test.main);
   group('option_chain_test', option_chain_test.main);
   group('order_preferences_test', order_preferences_test.main);
@@ -130,6 +135,9 @@ void main() {
   );
   group('positions.positions_list_test', positions__positions_list_test.main);
   group('range_switching_test', range_switching_test.main);
+  group('requested_indicators_test', requested_indicators_test.main);
+  group('search_override_test', search_override_test.main);
+  group('subchart_indicators_test', subchart_indicators_test.main);
   group('top_options_test', top_options_test.main);
   group('trading_test', trading_test.main);
   group('uni_chart_test', uni_chart_test.main);

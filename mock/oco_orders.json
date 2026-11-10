@@ -2,49 +2,49 @@
   "seedOcoOrders": [
     {
       "groupId": "OCO001",
-      "symID": "NIFTY17SEP26FUT",
-      "name": "NIFTY FUT 2026-09-17",
+      "symID": "NIFTY28DEC27FUT",
+      "name": "NIFTY FUT 2027-12-28",
       "exchange": "NSE",
       "side": "sell",
       "productType": "intraday",
       "stopLoss": {
         "type": "stopLoss",
         "side": "sell",
-        "triggerPrice": 22300,
+        "triggerPrice": 22100,
         "qty": 50,
-        "price": 22290,
+        "price": 22090,
         "fillQty": 0
       },
       "target": {
         "type": "limit",
         "side": "sell",
-        "triggerPrice": 22700,
+        "triggerPrice": 23100,
         "qty": 50,
-        "price": 22700,
+        "price": 23100,
         "fillQty": 0
       }
     },
     {
       "groupId": "OCO002",
-      "symID": "NIFTY17SEP2622700CE",
-      "name": "NIFTY 22700 CE 2026-09-17",
+      "symID": "NIFTY28DEC2722700CE",
+      "name": "NIFTY 22700 CE 2027-12-28",
       "exchange": "NSE",
       "side": "sell",
       "productType": "intraday",
       "stopLoss": {
         "type": "stopLoss",
         "side": "sell",
-        "triggerPrice": 85,
+        "triggerPrice": 420,
         "qty": 65,
-        "price": 82,
+        "price": 418,
         "fillQty": 0
       },
       "target": {
         "type": "limit",
         "side": "sell",
-        "triggerPrice": 130,
+        "triggerPrice": 470,
         "qty": 65,
-        "price": 130,
+        "price": 470,
         "fillQty": 0
       }
     }

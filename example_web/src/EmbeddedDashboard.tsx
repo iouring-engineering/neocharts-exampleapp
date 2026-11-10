@@ -1,5 +1,5 @@
 import { ChartMount } from './ChartMount'
-import { THEME_STORAGE_KEY } from './nxtChartHost'
+import { THEME_STORAGE_KEY } from './neoChartsHost'
 
 const NAV_ITEMS = ['Overview', 'Positions', 'Orders', 'Alerts', 'Settings']
 
