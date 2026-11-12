@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity() {
                 "marketTimings" -> result.success(mockData.marketTimings())
                 "hasOCO" -> result.success(false)
                 "isMarketOrderSupported" -> result.success(true)
-                "isTradingEnabled" -> result.success("{\"enabled\": true}")
+                "isTradingEnabled" -> result.success(true)
                 "storageKey" -> result.success("default")
                 // Demo brand colors; null brightness follows the system.
                 "theme" -> result.success(

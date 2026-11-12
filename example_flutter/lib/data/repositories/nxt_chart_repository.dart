@@ -1321,7 +1321,5 @@ class NxtChartRepository implements ChartInterface {
   }
 
   @override
-  Future<String> isTradingEnabled(String symId) async {
-    return jsonEncode({'enabled': true});
-  }
+  Future<bool> isTradingEnabled(String symId) async => true;
 }

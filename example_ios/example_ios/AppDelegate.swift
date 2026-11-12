@@ -47,7 +47,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 case "isMarketOrderSupported":
                     result(true)
                 case "isTradingEnabled":
-                    result("{\"enabled\": true}")
+                    result(true)
                 case "storageKey":
                     result("default")
                 case "theme":
