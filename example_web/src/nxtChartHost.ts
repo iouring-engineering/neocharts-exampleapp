@@ -83,6 +83,7 @@ export interface NxtChartHost {
   fetchAtmIvIntraday(): Promise<string>
   fundsData(): Promise<string>
   fetchMargin(params: string): Promise<string | null>
+  isTradingEnabled(symId: string): Promise<boolean>
 
   underlyingSymbolInfoFor(symbolId: string): Promise<string | null>
   optionSymbolsFor(underlyingId: string): Promise<string>
@@ -179,6 +180,7 @@ export const nxtChartHost: NxtChartHost = {
     const marginRequired = p.action === 'Buy' ? lots * ltp : lots * ltp * 3
     return Promise.resolve(JSON.stringify({ marginRequired }))
   },
+  isTradingEnabled() { return Promise.resolve(true) },
 
   underlyingSymbolInfoFor(symbolId) { return Promise.resolve(underlyingSymbolInfoForJson(symbolId)) },
   optionSymbolsFor(underlyingId) { return Promise.resolve(optionSymbolsForJson(underlyingId)) },

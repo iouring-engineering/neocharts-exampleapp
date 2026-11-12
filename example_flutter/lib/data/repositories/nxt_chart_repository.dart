@@ -1319,4 +1319,7 @@ class NxtChartRepository implements ChartInterface {
   void closeRequested() {
     // TODO: implement closeRequested
   }
+
+  @override
+  Future<bool> isTradingEnabled(String symId) async => true;
 }
