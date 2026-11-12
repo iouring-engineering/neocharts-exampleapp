@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:nxtchart/src/presentation/widgets/custom_checkbox.dart';

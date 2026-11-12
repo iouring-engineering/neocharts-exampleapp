@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show kReleaseMode;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/datasources/benchmark_config.dart';
 import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:neocharts_exampleapp/presentation/pages/charts/nxt_scalper_chart_screen.dart';
