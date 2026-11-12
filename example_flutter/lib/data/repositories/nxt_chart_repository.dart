@@ -1319,4 +1319,9 @@ class NxtChartRepository implements ChartInterface {
   void closeRequested() {
     // TODO: implement closeRequested
   }
+
+  @override
+  Future<String> isTradingEnabled(String symId) async {
+    return jsonEncode({'enabled': true});
+  }
 }
