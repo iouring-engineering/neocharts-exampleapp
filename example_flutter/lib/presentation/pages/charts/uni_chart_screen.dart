@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/repositories/uni_chart_repository.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';

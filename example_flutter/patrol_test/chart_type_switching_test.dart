@@ -1,5 +1,5 @@
 import 'package:financial_chart/financial_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nxtchart/src/enums/chart_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
