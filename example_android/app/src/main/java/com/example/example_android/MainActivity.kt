@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
     private val orders = mutableListOf<MutableMap<String, Any>>()
     private var orderSink: EventChannel.EventSink? = null
     private var orderCounter = 0
+    private val alerts = mutableListOf<JSONObject>()
+    private var alertSink: EventChannel.EventSink? = null
+    private var alertCounter = 0
 
     private fun registerChannels(engine: FlutterEngine) {
         val messenger = engine.dartExecutor.binaryMessenger
@@ -161,6 +164,47 @@ class MainActivity : AppCompatActivity() {
                     emitOrders()
                     result.success(null)
                 }
+                // Optional host hooks (see ChannelChartInterface.init). This demo
+                // keeps every built-in screen and feature, and runs without a
+                // home key.
+                "homeKey" -> result.success(null)
+                "widgetOverrides" -> result.success(listOf<String>())
+                "disabledFeatures" -> result.success(listOf<String>())
+                "fundsData" -> result.success(
+                    """{"availableMargin": 347500.0, "usedMargin": 152500.0}"""
+                )
+                "fetchMargin" -> {
+                    val p = JSONObject(call.arguments as? String ?: "{}")
+                    val lots = p.optDouble("lots", 0.0)
+                    val ltp = p.optDouble("ltp", 0.0)
+                    val required =
+                        if (p.optString("action") == "Buy") lots * ltp else lots * ltp * 3
+                    result.success("""{"marginRequired": $required}""")
+                }
+                "fetchBrokerage" -> result.success(null)
+                "createAlert" -> {
+                    val p = JSONObject(call.arguments as? String ?: "{}")
+                    alertCounter++
+                    p.put("alertId", "ALT${alertCounter.toString().padStart(3, '0')}")
+                    alerts.add(p)
+                    emitAlerts()
+                    result.success(null)
+                }
+                "modifyAlert" -> {
+                    val p = JSONObject(call.arguments as? String ?: "{}")
+                    val idx = alerts.indexOfFirst { it.optString("alertId") == p.optString("alertId") }
+                    if (idx >= 0) {
+                        p.keys().forEach { k -> alerts[idx].put(k, p.get(k)) }
+                        emitAlerts()
+                    }
+                    result.success(null)
+                }
+                "deleteAlert" -> {
+                    val id = call.argument<String>("alertId") ?: ""
+                    alerts.removeIf { it.optString("alertId") == id }
+                    emitAlerts()
+                    result.success(null)
+                }
                 "closeRequested" -> {
                     activeChartActivity?.finish()
                     result.success(null)
@@ -227,6 +271,15 @@ class MainActivity : AppCompatActivity() {
                 override fun onCancel(arguments: Any?) { positionsSink = null }
             })
 
+        EventChannel(messenger, "nxtchart/alerts")
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    alertSink = sink
+                    emitAlerts()
+                }
+                override fun onCancel(arguments: Any?) { alertSink = null }
+            })
+
         val stub = object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {}
             override fun onCancel(arguments: Any?) {}
@@ -237,6 +290,10 @@ class MainActivity : AppCompatActivity() {
         // notImplemented), so an emitted OCO order would render a draggable
         // marker whose every interaction fails.
         EventChannel(messenger, "nxtchart/ocoOrders").setStreamHandler(stub)
+    }
+
+    private fun emitAlerts() {
+        alertSink?.success(JSONArray(alerts).toString())
     }
 
     private fun emitOrders() {

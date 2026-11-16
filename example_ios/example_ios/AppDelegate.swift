@@ -26,6 +26,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     fileprivate var orderSink: FlutterEventSink?
     private var orderCounter = 0
 
+    private var alerts: [[String: Any]] = []
+    fileprivate var alertSink: FlutterEventSink?
+    private var alertCounter = 0
+
+    private func jsonObject(_ arguments: Any?) -> [String: Any] {
+        guard let json = arguments as? String, let data = json.data(using: .utf8) else { return [:] }
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+    }
+
+    func emitAlerts() {
+        guard let sink = alertSink,
+              let data = try? JSONSerialization.data(withJSONObject: alerts),
+              let json = String(data: data, encoding: .utf8)
+        else { return }
+        sink(json)
+    }
+
     weak var activeChartVC: FlutterViewController?
 
     private func registerChannels(messenger: FlutterBinaryMessenger) {
@@ -151,6 +168,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     self.orders.removeAll { $0["orderID"] as? String == targetId }
                     self.emitOrders()
                     result(nil)
+                // Optional host hooks (see ChannelChartInterface.init). This demo
+                // keeps every built-in screen and feature, and runs without a
+                // home key.
+                case "homeKey":
+                    result(nil)
+                case "widgetOverrides", "disabledFeatures":
+                    result([String]())
+                case "fundsData":
+                    result("{\"availableMargin\": 347500.0, \"usedMargin\": 152500.0}")
+                case "fetchMargin":
+                    let p = self.jsonObject(call.arguments)
+                    let lots = (p["lots"] as? NSNumber)?.doubleValue ?? 0
+                    let ltp = (p["ltp"] as? NSNumber)?.doubleValue ?? 0
+                    let required = (p["action"] as? String == "Buy") ? lots * ltp : lots * ltp * 3
+                    result("{\"marginRequired\": \(required)}")
+                case "fetchBrokerage":
+                    result(nil)
+                case "createAlert":
+                    var p = self.jsonObject(call.arguments)
+                    self.alertCounter += 1
+                    p["alertId"] = String(format: "ALT%03d", self.alertCounter)
+                    self.alerts.append(p)
+                    self.emitAlerts()
+                    result(nil)
+                case "modifyAlert":
+                    let p = self.jsonObject(call.arguments)
+                    if let idx = self.alerts.firstIndex(where: {
+                        $0["alertId"] as? String == p["alertId"] as? String
+                    }) {
+                        self.alerts[idx].merge(p) { _, new in new }
+                        self.emitAlerts()
+                    }
+                    result(nil)
+                case "deleteAlert":
+                    let args = call.arguments as? [String: Any] ?? [:]
+                    let targetId = args["alertId"] as? String ?? ""
+                    self.alerts.removeAll { $0["alertId"] as? String == targetId }
+                    self.emitAlerts()
+                    result(nil)
                 case "closeRequested":
                     self.activeChartVC?.dismiss(animated: true)
                     result(nil)
@@ -173,6 +229,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // draggable marker whose every interaction fails.
         FlutterEventChannel(name: "nxtchart/ocoOrders", binaryMessenger: messenger)
             .setStreamHandler(StubStreamHandler())
+
+        FlutterEventChannel(name: "nxtchart/alerts", binaryMessenger: messenger)
+            .setStreamHandler(AlertsStreamHandler(appDelegate: self))
 
         FlutterEventChannel(name: "nxtchart/tradeEvents", binaryMessenger: messenger)
             .setStreamHandler(StubStreamHandler())
@@ -256,6 +315,22 @@ class OrdersStreamHandler: NSObject, FlutterStreamHandler {
 
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         appDelegate?.orderSink = nil
+        return nil
+    }
+}
+
+class AlertsStreamHandler: NSObject, FlutterStreamHandler {
+    private weak var appDelegate: AppDelegate?
+    init(appDelegate: AppDelegate) { self.appDelegate = appDelegate }
+
+    func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? {
+        appDelegate?.alertSink = eventSink
+        appDelegate?.emitAlerts()
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        appDelegate?.alertSink = nil
         return nil
     }
 }
