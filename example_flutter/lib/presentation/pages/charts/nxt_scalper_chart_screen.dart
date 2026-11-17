@@ -8,11 +8,15 @@ class NxtScalperChartScreen extends StatelessWidget {
   const NxtScalperChartScreen({
     super.key,
     required this.dataProvider,
+    required this.supportedResolutions,
     this.widgetOverrides,
   });
 
   final ChartInterface dataProvider;
   final NeoChartWidgetOverrides? widgetOverrides;
+
+  /// See `NxtChartPage.supportedResolutions`.
+  final List<String> supportedResolutions;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +26,7 @@ class NxtScalperChartScreen extends StatelessWidget {
       widgetOverrides: widgetOverrides,
       homeKey: homeKey,
       style: _demoStyle,
+      supportedResolutions: supportedResolutions,
     );
   }
 }

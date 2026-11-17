@@ -115,6 +115,7 @@ Future<void> openChartWithOverridesAndAwaitLoad(
       home: NxtChartPage(
         dataProvider: NxtChartRepository(storageKey: 'scalper_chart'),
         widgetOverrides: widgetOverrides,
+        supportedResolutions: const [],
       ),
     ),
   );

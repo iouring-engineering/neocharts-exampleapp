@@ -23,6 +23,7 @@ class NxtChartRepository implements ChartInterface {
     this.streamRate = StreamRate.r1,
     this.liveDataEnabled = true,
     this.benchmarkBarCount,
+    this.supportedResolutions,
     this._symbolId,
   }) {
     _initialize();
@@ -30,6 +31,14 @@ class NxtChartRepository implements ChartInterface {
 
   @override
   final String storageKey;
+
+  /// Lets a benchmark/dev run exercise the resolution-negotiation path
+  /// (e.g. `['1', '1D']`, so every other interval is derived by
+  /// aggregation) -- pass straight through to `NxtChartPage
+  /// .supportedResolutions` when constructing the page from this
+  /// repository. Null (the default) keeps every interval requested
+  /// directly, same as every other mock host.
+  final List<String>? supportedResolutions;
 
   final StreamRate streamRate;
   final bool liveDataEnabled;

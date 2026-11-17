@@ -51,7 +51,10 @@ class _UniChartScreenState extends State<UniChartScreen> {
           ),
         ),
       ),
-      body: NxtChartPage.uni(dataProvider: _uni),
+      body: NxtChartPage.uni(
+        dataProvider: _uni,
+        supportedResolutions: const ['1', '1D'],
+      ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
