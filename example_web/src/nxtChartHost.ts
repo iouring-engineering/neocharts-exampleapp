@@ -210,7 +210,7 @@ export const nxtChartHost: NxtChartHost = {
     const p = JSON.parse(params) as Record<string, unknown>
     const idx = orders.findIndex((o) => o.orderID === p.orderID)
     if (idx >= 0) {
-      orders[idx] = { ...orders[idx], avgPrice: p.price ?? 0, netQty: p.qty ?? 0, type: p.orderType ?? 'limit', orderAction: p.orderAction ?? 'buy' }
+      orders[idx] = { ...orders[idx], avgPrice: p.price ?? 0, price: p.price ?? 0, netQty: p.qty ?? 0, type: p.orderType ?? 'limit', orderAction: p.orderAction ?? 'buy' }
       dispatch('nxtchart:orders', orders)
     }
   },
