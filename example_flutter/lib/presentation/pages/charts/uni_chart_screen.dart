@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/repositories/uni_chart_repository.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';
 
@@ -53,7 +54,8 @@ class _UniChartScreenState extends State<UniChartScreen> {
       ),
       body: NxtChartPage.uni(
         dataProvider: _uni,
-        supportedResolutions: const ['1', '1D'],
+        supportedResolutions: demoResolutions,
+        nativeResolutions: const ['1', '1D'],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(

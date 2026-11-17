@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
     return widget.interfaceOverride ??
         NxtChartRepository(
           storageKey: 'scalper_chart',
-          supportedResolutions: const ['1', '1D'],
+          nativeResolutions: const ['1', '1D'],
         );
   }
 
@@ -205,12 +205,10 @@ class _HomePageState extends State<HomePage> {
                                     builder: (context) => NxtScalperChartScreen(
                                       dataProvider: dataProvider,
                                       widgetOverrides: widget.widgetOverrides,
-                                      supportedResolutions:
+                                      nativeResolutions:
                                           dataProvider is NxtChartRepository
-                                          ? (dataProvider
-                                                    .supportedResolutions ??
-                                                const [])
-                                          : const [],
+                                          ? dataProvider.nativeResolutions
+                                          : demoResolutions,
                                     ),
                                   ),
                                 );
