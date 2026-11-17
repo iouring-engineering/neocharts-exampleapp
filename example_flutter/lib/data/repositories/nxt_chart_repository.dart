@@ -266,7 +266,7 @@ class NxtChartRepository implements ChartInterface {
   }
 
   @override
-  Stream<String> searchSymbolsStreamer(String query) {
+  Stream<String> searchSymbolsStreamer(String query, NeoChartLayout layout) {
     final keyword = query.trim().toLowerCase();
 
     scheduleMicrotask(() {
