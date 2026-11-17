@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/nxt_chart_repository.dart';
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';
 
@@ -8,11 +9,15 @@ class NxtScalperChartScreen extends StatelessWidget {
   const NxtScalperChartScreen({
     super.key,
     required this.dataProvider,
+    required this.nativeResolutions,
     this.widgetOverrides,
   });
 
   final ChartInterface dataProvider;
   final NeoChartWidgetOverrides? widgetOverrides;
+
+  /// See `NxtChartPage.nativeResolutions`.
+  final List<String> nativeResolutions;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +27,8 @@ class NxtScalperChartScreen extends StatelessWidget {
       widgetOverrides: widgetOverrides,
       homeKey: homeKey,
       style: _demoStyle,
+      supportedResolutions: demoResolutions,
+      nativeResolutions: nativeResolutions,
     );
   }
 }

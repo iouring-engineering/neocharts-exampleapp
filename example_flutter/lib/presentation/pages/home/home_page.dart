@@ -58,7 +58,10 @@ class _HomePageState extends State<HomePage> {
     // time; a test's pre-seeded override is reused as-is, since it never
     // reopens within the same test.
     return widget.interfaceOverride ??
-        NxtChartRepository(storageKey: 'scalper_chart');
+        NxtChartRepository(
+          storageKey: 'scalper_chart',
+          nativeResolutions: const ['1', '1D'],
+        );
   }
 
   @override
@@ -195,12 +198,17 @@ class _HomePageState extends State<HomePage> {
                                 Color(0xFF00C6A2),
                               ],
                               onTap: () {
+                                final dataProvider = _resolveInterface();
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => NxtScalperChartScreen(
-                                      dataProvider: _resolveInterface(),
+                                      dataProvider: dataProvider,
                                       widgetOverrides: widget.widgetOverrides,
+                                      nativeResolutions:
+                                          dataProvider is NxtChartRepository
+                                          ? dataProvider.nativeResolutions
+                                          : demoResolutions,
                                     ),
                                   ),
                                 );

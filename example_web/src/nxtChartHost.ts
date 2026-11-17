@@ -49,6 +49,8 @@ export interface NxtChartHost {
   readonly hasOCO: boolean
   readonly isMarketOrderSupported: boolean
   readonly storageKey: string
+  readonly supportedResolutions: readonly string[]
+  readonly nativeResolutions: readonly string[]
   readonly primaryColor: string | null
   readonly onPrimaryColor: string | null
   readonly chartColors: string | null
@@ -151,6 +153,9 @@ export const nxtChartHost: NxtChartHost = {
   get hasOCO() { return true },
   get isMarketOrderSupported() { return true },
   get storageKey() { return 'js-host-demo' },
+  get supportedResolutions() { return ['1', '5', '15', '60', '1D', '1W'] },
+  // Demo: only 1m and 1D are served; the SDK merges every other chip.
+  get nativeResolutions() { return ['1', '1D'] },
   get primaryColor() { return '#2EA7E0' },
   get onPrimaryColor() { return '#FFFFFF' },
   // Demo brand colors for both modes -- see the theming docs for all 14 tokens.

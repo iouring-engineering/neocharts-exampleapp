@@ -17,12 +17,16 @@ export 'package:neocharts_exampleapp/data/datasources/stream_rate.dart';
 /// subscribes to, and the JSON (de)serialization at the edge of that
 /// contract. Market-data generation itself is delegated to
 /// [MockChartDataSource].
+/// The demo's interval chips (`NxtChartPage.supportedResolutions`).
+const demoResolutions = ['1', '5', '15', '60', '1D', '1W'];
+
 class NxtChartRepository implements ChartInterface {
   NxtChartRepository({
     required this.storageKey,
     this.streamRate = StreamRate.r1,
     this.liveDataEnabled = true,
     this.benchmarkBarCount,
+    this.nativeResolutions = demoResolutions,
     this._symbolId,
   }) {
     _initialize();
@@ -30,6 +34,10 @@ class NxtChartRepository implements ChartInterface {
 
   @override
   final String storageKey;
+
+  /// Pass to `NxtChartPage.nativeResolutions`; e.g. `['1', '1D']` makes the
+  /// SDK merge every other chip from 1m/1D candles.
+  final List<String> nativeResolutions;
 
   final StreamRate streamRate;
   final bool liveDataEnabled;
