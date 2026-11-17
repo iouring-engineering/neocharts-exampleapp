@@ -170,23 +170,31 @@ class MainActivity : AppCompatActivity() {
                 "homeKey" -> result.success(null)
                 "widgetOverrides" -> result.success(listOf<String>())
                 "disabledFeatures" -> result.success(listOf<String>())
+                // Funds, order-pad previews and alerts (see TradeInterface).
                 "fundsData" -> result.success(
                     """{"availableMargin": 347500.0, "usedMargin": 152500.0}"""
                 )
                 "fetchMargin" -> {
                     val p = JSONObject(call.arguments as? String ?: "{}")
-                    val lots = p.optDouble("lots", 0.0)
-                    val ltp = p.optDouble("ltp", 0.0)
-                    val required =
-                        if (p.optString("action") == "Buy") lots * ltp else lots * ltp * 3
+                    val lotSize = JSONObject(mockData.symbolInfo()).optDouble("lotSize", 1.0)
+                    val value = p.optDouble("lots", 0.0) * lotSize * p.optDouble("ltp", 0.0)
+                    val required = if (p.optString("action") == "Buy") value else value * 3
                     result.success("""{"marginRequired": $required}""")
                 }
                 "fetchBrokerage" -> result.success(null)
                 "createAlert" -> {
                     val p = JSONObject(call.arguments as? String ?: "{}")
                     alertCounter++
-                    p.put("alertId", "ALT${alertCounter.toString().padStart(3, '0')}")
-                    alerts.add(p)
+                    // Shape per TradeInterface.alertsStreamer.
+                    alerts.add(
+                        JSONObject()
+                            .put("alertId", "ALT${alertCounter.toString().padStart(3, '0')}")
+                            .put("symbolInfo", JSONObject(mockData.symbolInfo()))
+                            .put("triggerPrice", p.optString("triggerPrice"))
+                            .put("enabled", true)
+                            .put("triggered", false)
+                            .put("createdAt", System.currentTimeMillis())
+                    )
                     emitAlerts()
                     result.success(null)
                 }

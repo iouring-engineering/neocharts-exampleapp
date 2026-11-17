@@ -128,10 +128,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         barCount: requiredBars
                     ))
                 case "placeOrder":
-                    let json = call.arguments as? String ?? "{}"
-                    let p = (try? JSONSerialization.jsonObject(
-                        with: json.data(using: .utf8)!
-                    ) as? [String: Any]) ?? [:]
+                    let p = self.jsonObject(call.arguments)
                     self.orderCounter += 1
                     let id = String(format: "ORD%03d", self.orderCounter)
                     self.orders.append([
@@ -146,10 +143,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     self.emitOrders()
                     result(nil)
                 case "modifyOrder":
-                    let json = call.arguments as? String ?? "{}"
-                    let p = (try? JSONSerialization.jsonObject(
-                        with: json.data(using: .utf8)!
-                    ) as? [String: Any]) ?? [:]
+                    let p = self.jsonObject(call.arguments)
                     let targetId = p["orderID"] as? String ?? ""
                     if let idx = self.orders.firstIndex(where: {
                         $0["orderID"] as? String == targetId
@@ -175,21 +169,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     result(nil)
                 case "widgetOverrides", "disabledFeatures":
                     result([String]())
+                // Funds, order-pad previews and alerts (see TradeInterface).
                 case "fundsData":
                     result("{\"availableMargin\": 347500.0, \"usedMargin\": 152500.0}")
                 case "fetchMargin":
                     let p = self.jsonObject(call.arguments)
                     let lots = (p["lots"] as? NSNumber)?.doubleValue ?? 0
                     let ltp = (p["ltp"] as? NSNumber)?.doubleValue ?? 0
-                    let required = (p["action"] as? String == "Buy") ? lots * ltp : lots * ltp * 3
+                    let lotSize = (self.jsonObject(self.mockData.symbolInfo())["lotSize"]
+                        as? NSNumber)?.doubleValue ?? 1
+                    let value = lots * lotSize * ltp
+                    let required = (p["action"] as? String == "Buy") ? value : value * 3
                     result("{\"marginRequired\": \(required)}")
                 case "fetchBrokerage":
                     result(nil)
                 case "createAlert":
-                    var p = self.jsonObject(call.arguments)
+                    let p = self.jsonObject(call.arguments)
                     self.alertCounter += 1
-                    p["alertId"] = String(format: "ALT%03d", self.alertCounter)
-                    self.alerts.append(p)
+                    // Shape per TradeInterface.alertsStreamer.
+                    self.alerts.append([
+                        "alertId": String(format: "ALT%03d", self.alertCounter),
+                        "symbolInfo": self.jsonObject(self.mockData.symbolInfo()),
+                        "triggerPrice": p["triggerPrice"] as? String ?? "",
+                        "enabled": true,
+                        "triggered": false,
+                        "createdAt": Int(Date().timeIntervalSince1970 * 1000),
+                    ])
                     self.emitAlerts()
                     result(nil)
                 case "modifyAlert":
