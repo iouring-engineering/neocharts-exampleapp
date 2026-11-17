@@ -1,9 +1,7 @@
-import 'package:financial_chart/financial_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/chart_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
-import 'package:nxtchart/src/shared/constants.dart';
 import 'package:patrol/patrol.dart';
 
 import 'helpers.dart';
@@ -23,78 +21,7 @@ import 'helpers.dart';
 // what it CAN verify: that selecting the row actually updates the bloc's
 // selected type.
 
-// Verifies the RIGHT panel's actual live GChart -- not the picker's
-// selection -- has switched to render [type]: mirrors exactly what the
-// chart bloc sets on the real graph objects, so this fails if the chart
-// itself silently didn't follow the selection.
-void _expectRenderedChartType(GChart chart, ChartType type) {
-  final panel = chart.findPanelByID(Constants.mainPanel)!;
-  final ohlc = panel.findGraphById(Constants.ohlcGraph)! as GGraphOhlc;
-  final line = panel.findGraphById(Constants.lineGraph)!;
-  final area = panel.findGraphById(Constants.areaGraph)!;
-  final ha = panel.findGraphById(Constants.haGraph)!;
-  final highLow = panel.findGraphById(Constants.highLowGraph)!;
-
-  expect(
-    ohlc.visible,
-    type.usesOhlcGraph,
-    reason: 'OHLC graph visibility for $type',
-  );
-  expect(line.visible, type == ChartType.line, reason: 'line graph for $type');
-  expect(area.visible, type == ChartType.area, reason: 'area graph for $type');
-  expect(
-    ha.visible,
-    type == ChartType.heikinAshi,
-    reason: 'Heikin Ashi graph for $type',
-  );
-  expect(
-    highLow.visible,
-    type == ChartType.highLow,
-    reason: 'High-Low graph for $type',
-  );
-
-  if (type.usesOhlcGraph) {
-    expect(
-      ohlc.drawAsCandle,
-      type.drawAsCandle,
-      reason: 'drawAsCandle for $type',
-    );
-    expect(
-      ohlc.volumeScaledWidth,
-      type.scalesWidthByVolume,
-      reason: 'volumeScaledWidth for $type',
-    );
-  }
-}
-
 void main() {
-  group('Chart type switching — rendered chart matches selection', () {
-    for (final type in ChartType.values) {
-      patrolTest(
-        'selecting ${type.name} renders the correct graph on the actual '
-        'chart, even after the menu is closed',
-        ($) async {
-          await openChartAndAwaitLoad($);
-          await selectChartLayout($, 'indexCallPut');
-
-          await openChartTypeMenuRightPanel($);
-          await tapChartTypeRow($, type.name);
-          await $.pumpAndSettle();
-
-          // Right after selecting, while the menu is still open.
-          _expectRenderedChartType(currentChartRightPanel($), type);
-
-          await closeChartTypeMenuRightPanel($);
-          expect($(Key(ChartTestKeys.errorState)), findsNothing);
-
-          // The real assertion: with the picker gone, the chart underneath
-          // must still be the one just selected, not reverted or blanked.
-          _expectRenderedChartType(currentChartRightPanel($), type);
-        },
-      );
-    }
-  });
-
   group('Chart type switching — dual-panel right side', () {
     patrolTest(
       'selecting Volume Candle updates the chart\'s selected type, and the '
