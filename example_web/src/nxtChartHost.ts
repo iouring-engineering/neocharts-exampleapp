@@ -64,7 +64,10 @@ export interface NxtChartHost {
   fetchOptionDetails(underlyingSymbolId: string): Promise<string>
   chartTopOptions(): Promise<string>
   atmSymbols(): Promise<string | null>
-  searchSymbols(query: string): Promise<string>
+  searchSymbols(
+    query: string,
+    layout: 'singleChart' | 'indexCallPut' | 'callPut',
+  ): Promise<string>
   fetchOIAnalysis(
     underlyingSymbolId: string,
     expiry: string,
