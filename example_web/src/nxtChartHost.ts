@@ -49,6 +49,7 @@ export interface NxtChartHost {
   readonly hasOCO: boolean
   readonly isMarketOrderSupported: boolean
   readonly storageKey: string
+  readonly supportedResolutions: readonly string[] | null
   readonly primaryColor: string | null
   readonly onPrimaryColor: string | null
   readonly chartColors: string | null
@@ -148,6 +149,9 @@ export const nxtChartHost: NxtChartHost = {
   get hasOCO() { return true },
   get isMarketOrderSupported() { return true },
   get storageKey() { return 'js-host-demo' },
+  // Demo: this host only serves 1-minute and 1-day candles directly --
+  // the SDK builds every other interval itself by aggregating the 1m data.
+  get supportedResolutions() { return ['1', '1D'] },
   get primaryColor() { return '#2EA7E0' },
   get onPrimaryColor() { return '#FFFFFF' },
   // Demo brand colors for both modes -- see the theming docs for all 14 tokens.
