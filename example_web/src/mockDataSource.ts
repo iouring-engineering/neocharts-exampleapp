@@ -441,6 +441,12 @@ export const placedOrder = (orderID: string, p: Record<string, unknown>) => ({
   orderAction: p.orderAction ?? 'buy',
   productType: p.productType ?? 'normal',
   avgPrice: p.price ?? 0,
+  // Open-order lines plot at `price`. A market order carries none, so use
+  // the LTP the mock would fill it at.
+  price:
+    p.orderType === 'market'
+      ? roundToTick(priceAt(p.symID as string, Date.now()), tickSizeFor(p.symID as string))
+      : (p.price ?? 0),
   netQty: p.qty ?? 0,
   fillQty: 0,
   orderStatus: 'open',
