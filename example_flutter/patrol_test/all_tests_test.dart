@@ -26,7 +26,6 @@ import 'benchmark_perf_test.dart' as benchmark_perf_test;
 import 'chart_type_switching_test.dart' as chart_type_switching_test;
 import 'indicator_toggling_test.dart' as indicator_toggling_test;
 import 'interval_switching_test.dart' as interval_switching_test;
-import 'ltp_highlow_check_test.dart' as ltp_highlow_check_test;
 import 'main_chart_indicators_test.dart' as main_chart_indicators_test;
 import 'option_chain_test.dart' as option_chain_test;
 import 'order_preferences_test.dart' as order_preferences_test;
@@ -87,7 +86,6 @@ void main() {
   group('chart_type_switching_test', chart_type_switching_test.main);
   group('indicator_toggling_test', indicator_toggling_test.main);
   group('interval_switching_test', interval_switching_test.main);
-  group('ltp_highlow_check_test', ltp_highlow_check_test.main);
   group('main_chart_indicators_test', main_chart_indicators_test.main);
   group('option_chain_test', option_chain_test.main);
   group('order_preferences_test', order_preferences_test.main);

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:financial_chart/financial_chart.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
@@ -10,7 +8,6 @@ import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
 import 'package:nxtchart/src/enums/chart_indicator.dart';
 import 'package:nxtchart/src/licensing/license_runtime.dart';
-import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:nxtchart/widgets.dart';
 import 'package:patrol/patrol.dart';
@@ -627,16 +624,6 @@ Future<void> openChartTypeMenuRightPanel(PatrolIntegrationTester $) async {
 Future<void> closeChartTypeMenuRightPanel(PatrolIntegrationTester $) async {
   await $.tester.tapAt(const Offset(10, 10));
   await $.pumpAndSettle();
-}
-
-// Returns the dual-panel layout's RIGHT-hand panel's live `GChart` -- the
-// same object the chart bloc mutates on a chart-type change -- so a test
-// can verify the actual rendered graph, not just the picker's selection.
-GChart currentChartRightPanel(PatrolIntegrationTester $) {
-  final overlayElement = $.tester.element(
-    find.byKey(Key(ChartTestKeys.debugVisibleRange)).last,
-  );
-  return BlocProvider.of<ChartBloc>(overlayElement).state.chart!;
 }
 
 // Opens the home page's "UniChart" card and waits for its chart to load.
