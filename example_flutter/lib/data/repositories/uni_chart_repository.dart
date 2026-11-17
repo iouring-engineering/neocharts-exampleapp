@@ -1,109 +1,94 @@
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:nxtchart/interface.dart';
 
-/// The example's [UniChartInterface]: chart data and line streams come from
-/// the same mock [ChartInterface] the full chart uses, and every action is
-/// reported through [onAction]. A real host opens its own order pad, modify
-/// screen or alert editor in each `on*` callback instead.
-class UniChartRepository implements UniChartInterface {
+/// The example's [UniChartHost] with every line group: chart data and line
+/// streams come from the same mock [NeoChartsRepository] the full chart uses,
+/// and every action is reported through [onAction]. A real host opens its own
+/// order pad, modify screen or alert editor in each callback instead.
+class UniChartRepository
+    implements
+        UniChartHost,
+        UniOrderLines,
+        UniOcoLines,
+        UniPositionLines,
+        UniAlertLines {
   UniChartRepository({required this.base, required this.onAction});
 
-  final ChartInterface base;
+  final NeoChartsRepository base;
 
   /// Receives a one-line description of each chart action.
   final void Function(String action) onAction;
 
   @override
-  String get symbolInfo => base.symbolInfo;
+  SymbolInfo get symbol => base.initialSymbol;
 
   @override
-  String get marketTimings => base.marketTimings;
-
-  @override
-  Future<String> loadData({
-    required String symbolId,
-    required int from,
-    required int to,
-    required int intervalSeconds,
-    required int requiredBars,
-  }) => base.loadData(
-    symbolId: symbolId,
-    from: from,
-    to: to,
-    intervalSeconds: intervalSeconds,
-    requiredBars: requiredBars,
-  );
-
-  @override
-  Stream<String> marketDataStreamer(String symbols) =>
-      base.marketDataStreamer(symbols);
+  Map<String, MarketTiming> get marketTimings => base.marketTimings;
 
   @override
   String get storageKey => base.storageKey;
 
   @override
+  Future<List<OHLC>> loadData(CandleRequest request) => base.loadData(request);
+
+  @override
+  Stream<List<ChartTick>> marketData(Set<String> symbolIds) =>
+      base.marketData(symbolIds);
+
+  @override
   void dispose() => base.dispose();
 
   @override
-  Stream<String> get ordersStreamer => base.ordersStreamer;
+  Stream<List<Order>> get orders => base.orders;
 
   @override
-  Stream<String> get ocoOrdersStreamer => base.ocoOrdersStreamer;
+  Stream<List<OCOOrder>> get ocoOrders => base.ocoOrders;
 
   @override
-  Stream<String> get positionsStreamer => base.positionsStreamer;
+  Stream<List<Position>> get positions => base.positions;
 
   @override
-  Stream<String> get alertsStreamer => base.alertsStreamer;
+  Stream<List<Alert>> get alerts => base.alerts;
 
-  @override
-  void onTrade({
-    OrderAction? side,
-    OrderType? orderType,
-    double? price,
-    int? qty,
-    String? productType,
-  }) => onAction(
+  /// The `onTrade` handler for `NeoChartPage.uni`.
+  void onTrade(TradeIntent intent) => onAction(
     [
       'onTrade:',
-      ?side?.value,
-      ?orderType?.value,
-      if (price != null) '@ $price',
-      if (qty != null) 'qty $qty',
-      ?productType,
+      ?intent.side?.value,
+      ?intent.orderType?.value,
+      if (intent.price != null) '@ ${intent.price}',
+      if (intent.qty != null) 'qty ${intent.qty}',
+      ?intent.productType,
     ].join(' '),
   );
 
   @override
-  void onModifyOrder({required String orderId, required double price}) =>
+  void onModifyOrder(String orderId, double price) =>
       onAction('onModifyOrder: $orderId to $price');
 
   @override
-  void onCancelOrder({required String orderId}) =>
-      onAction('onCancelOrder: $orderId');
+  void onCancelOrder(String orderId) => onAction('onCancelOrder: $orderId');
 
   @override
-  void onModifyOcoLeg({
-    required String groupId,
-    required bool isStopLoss,
+  void onModifyOcoLeg(
+    String groupId, {
+    required OcoLeg leg,
     required double price,
   }) => onAction(
-    'onModifyOcoLeg: $groupId ${isStopLoss ? 'stop-loss' : 'target'} '
-    'to $price',
+    'onModifyOcoLeg: $groupId '
+    '${leg == OcoLeg.stopLoss ? 'stop-loss' : 'target'} to $price',
   );
 
   @override
-  void onCancelOco({required String groupId}) =>
-      onAction('onCancelOco: $groupId');
+  void onCancelOco(String groupId) => onAction('onCancelOco: $groupId');
 
   @override
-  void onCreateAlert({required double price}) =>
-      onAction('onCreateAlert: @ $price');
+  void onCreateAlert(double price) => onAction('onCreateAlert: @ $price');
 
   @override
-  void onModifyAlert({required String alertId, required double price}) =>
+  void onModifyAlert(String alertId, double price) =>
       onAction('onModifyAlert: $alertId to $price');
 
   @override
-  void onDeleteAlert({required String alertId}) =>
-      onAction('onDeleteAlert: $alertId');
+  void onDeleteAlert(String alertId) => onAction('onDeleteAlert: $alertId');
 }

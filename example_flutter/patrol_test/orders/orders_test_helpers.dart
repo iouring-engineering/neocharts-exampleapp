@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/order_action.dart';
 import 'package:nxtchart/src/enums/order_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
@@ -12,7 +12,7 @@ import '../helpers.dart';
 // openOrdersPanel, openOrderPad, findAnyOrderCancelBtn/ModifyBtn,
 // waitUntilPresent/Absent) rather than duplicating them.
 //
-// Order placement/modification/cancellation in NxtChartRepository are
+// Order placement/modification/cancellation in NeoChartsRepository are
 // unconditional pass-throughs with no configurable failure, so this suite
 // only exercises what's actually observable through it: the client-side
 // validation in the order/modify pads, and orders-list/dialog state after

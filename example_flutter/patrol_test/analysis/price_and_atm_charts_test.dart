@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
@@ -15,7 +15,7 @@ import 'analysis_test_helpers.dart';
 //
 // Price chart data comes from the market data loaded once when the
 // analysis panel opens, independent of tab selection; ATM Straddle/IV come
-// from NxtChartRepository.fetchAtmStraddleIntraday/fetchAtmIvIntraday,
+// from NeoChartsRepository.fetchAtmStraddleIntraday/fetchAtmIvIntraday,
 // both fully implemented with real synthetic data.
 //
 // Every test opens a fresh chart first.

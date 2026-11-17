@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -7,7 +7,7 @@ import 'helpers.dart';
 
 // P&L panel:
 //   - Purely a display screen (no interactive controls of its own) that
-//     reads totals off the positions bloc's state -- NxtChartRepository
+//     reads totals off the positions bloc's state -- NeoChartsRepository
 //     seeds a handful of demo positions and streams synthetic ticks for
 //     them, so unrealised P&L moves once they're live.
 //   - The positions bloc only recomputes totalRealizedPnl/

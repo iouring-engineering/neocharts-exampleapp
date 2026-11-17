@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -9,7 +9,7 @@ import '../helpers.dart';
 // delete via the drawer panel, plus the on-chart marker's own drag-to-modify
 // and delete).
 //
-// Alerts are fully wired in NxtChartRepository -- createAlert/modifyAlert/
+// Alerts are fully wired in NeoChartsRepository -- createAlert/modifyAlert/
 // deleteAlert all mutate real in-memory state and re-broadcast it on
 // alertsStreamer -- so there's no bespoke setup needed here beyond the
 // shared openChartAndAwaitLoad entry point.
@@ -22,7 +22,7 @@ import '../helpers.dart';
 // Every finder here locates by key (ChartTestKeys' alert-list/dialog/
 // on-chart-marker sections), not by text/type/structure.
 
-// NxtChartRepository.createAlert assigns ids as 'ALERT001', 'ALERT002', ...
+// NeoChartsRepository.createAlert assigns ids as 'ALERT001', 'ALERT002', ...
 // off a per-instance counter starting at 0; every test in this suite opens
 // a fresh chart and creates exactly one alert, so it's always 'ALERT001'.
 const alertId = 'ALERT001';
@@ -55,7 +55,7 @@ Future<void> tapAlertDialogSubmit(PatrolIntegrationTester $) async {
 // modify/delete/chart-marker tests) uses this rather than a seeding method
 // -- the dialog's validation has no tick-alignment/LTP-boundary constraint
 // to route around, so driving the real UI is no less deterministic than
-// seeding would be, and NxtChartRepository exposes no alert-seeding hook
+// seeding would be, and NeoChartsRepository exposes no alert-seeding hook
 // anyway (only seedPosition(), for the positions suite).
 Future<void> createAlert(
   PatrolIntegrationTester $, {

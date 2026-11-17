@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/analysis_tab_types.dart';
 import 'package:nxtchart/src/enums/oi_change_interval.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
@@ -9,7 +9,7 @@ import '../helpers.dart';
 import 'analysis_test_helpers.dart';
 
 // OI Change tab:
-//   - NxtChartRepository.fetchOIChange returns real synthetic per-strike
+//   - NeoChartsRepository.fetchOIChange returns real synthetic per-strike
 //     call/put OI-change data, so this tab's chart and summary row render
 //     live content -- not just the fallback "No data available" state.
 //   - The expiry dropdown (same real-data-backed mechanism as OI

@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
 
@@ -9,9 +9,10 @@ import 'performance_test_helpers.dart';
 
 // Perf — symbol search
 //
-// The mock symbol universe (MockChartDataSource.allSymbols) is 313 wide --
-// 1 NIFTY index + 110 option-chain symbols (55 strikes x CE/PE) + 1 future
-// + 1 INDIA VIX index + 200 synthetic equities added solely to give this
+// The mock symbol universe (MockChartDataSource.allSymbols) is 393 wide --
+// 3 spots (NIFTY, BANKNIFTY, RELIANCE) + 182 option-chain symbols (55, 21
+// and 15 strikes x CE/PE) + 3 futures + 1 INDIA VIX index + 4 named
+// equities + 200 synthetic equities added solely to give this
 // suite a large, realistic universe to filter/scroll through (see
 // MockChartDataSource.generateEquitySymbols). An empty query returns the
 // whole list, so opening the panel with no query already exercises the

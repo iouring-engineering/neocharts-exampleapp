@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nxtchart/src/enums/order_action.dart';
 import 'package:nxtchart/src/enums/order_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
@@ -12,8 +12,8 @@ import 'orders_test_helpers.dart';
 //   - Shown below each of the order pad's BUY/SELL buttons as "Req: ₹X",
 //     X being margin + brokerage for that side. Hidden (SizedBox.shrink())
 //     until the first fetchMargin/fetchBrokerage reply lands.
-//   - NxtChartRepository's fetchMargin/fetchBrokerage are pure mocks (see
-//     nxt_chart_repository.dart): margin is the full order value (lots x
+//   - NeoChartsRepository's fetchMargin/fetchBrokerage are pure mocks (see
+//     neo_charts_repository.dart): margin is the full order value (lots x
 //     lotSize x ltp), or 20% of it for intraday -- neither depends on
 //     Buy/Sell, so both sides always show the same total once populated.
 //     Brokerage is 0.03% of notional, capped at ₹20, also side-agnostic.
