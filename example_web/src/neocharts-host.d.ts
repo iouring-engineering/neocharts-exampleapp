@@ -81,6 +81,12 @@ export interface NeoChartsSession {
   /** An order, SL or target tag's close button cancels with no confirm. */
   directCancel?: boolean
   /**
+   * The stop-loss / target pad shows only Trigger, with no Price field. A leg
+   * placed from it, or whose trigger the user changes in a modify, is sent
+   * with `price` equal to `triggerPrice`; an untouched leg is re-sent as it was.
+   */
+  slTpTriggerOnly?: boolean
+  /**
    * Keyed by segment (`EQ`, `FUT`, `OPT`, `CD`, `COM`). `values` must be
    * non-empty and contain `default`; a segment that breaks this, or an
    * unknown one, is skipped and logged.
@@ -244,6 +250,37 @@ export interface NeoChartsFont {
   files: string[]
 }
 
+/**
+ * A button in the chart's top bar, after the built-in left buttons, in
+ * array order with a divider before each. An invalid item is skipped with a
+ * console warning.
+ */
+export interface NeoChartsToolbarItem {
+  /**
+   * Label. At least one of `text` / `icon` is required. 12pt; wraps past
+   * 64px, at most 2 lines, then ends in "…".
+   */
+  text?: string
+  /** Inline SVG markup; `currentColor` takes the theme's icon colour. */
+  icon?: string
+  /** Shown on hover. */
+  tooltip?: string
+  /**
+   * Runs synchronously inside the click, so `window.open` here is not
+   * popup-blocked. Required unless `items` is given; a throw is logged.
+   */
+  onClick?: () => void
+  /** Makes this a dropdown; the item's own `onClick` is then ignored. */
+  items?: NeoChartsToolbarMenuItem[]
+}
+
+/** A dropdown entry; picking it runs `onClick` and closes the menu. */
+export interface NeoChartsToolbarMenuItem {
+  text: string
+  icon?: string
+  onClick: () => void
+}
+
 export interface NeoChartsMountOptions {
   /** A theme object or its JSON string. */
   theme?: NeoChartsTheme | string
@@ -251,12 +288,16 @@ export interface NeoChartsMountOptions {
   font?: NeoChartsFont | string
   /** Defaults to `/neocharts-key.json` on the page origin. */
   licenseKeyUrl?: string
+  /** Top-bar buttons, shown on the chart's first frame. */
+  toolbar?: NeoChartsToolbarItem[]
 }
 
 export interface NeoChartsHandle {
   unmount(): void
   /** A theme object or its JSON string. */
   setTheme(theme: NeoChartsTheme | string): void
+  /** Replaces all top-bar buttons; `[]` clears them. */
+  setToolbar(items: NeoChartsToolbarItem[]): void
 }
 
 export interface NeoChartsGlobal {
