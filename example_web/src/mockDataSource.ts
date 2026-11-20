@@ -241,6 +241,9 @@ export function formatOrdTime(offsetMinutes: number): string {
 // Static fixture reads
 // -------------------------------------------------------------------------
 
+/** The spot indices (never tradable), as `init()` sends them. */
+export const indexSymbols = (): SymbolInfo[] => data().indexSymbols
+
 /**
  * The `init()` session: `session.json` plus the resolved initial symbol and
  * the index symbols.
