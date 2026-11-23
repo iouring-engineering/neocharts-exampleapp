@@ -45,6 +45,17 @@ OCOPlaceOrderRequestParams ocoParams(
 );
 
 void main() {
+  test('NIFTY and BANKNIFTY are indices unless patrol trades them', () {
+    List<String> ids() => [
+      for (final s in NeoChartsRepository(liveDataEnabled: false).indexSymbols)
+        s.id,
+    ];
+    addTearDown(() => NeoChartsRepository.spotsAreIndices = true);
+
+    expect(ids(), containsAll(['NIFTY', 'BANKNIFTY', 'INDIAVIX']));
+    NeoChartsRepository.spotsAreIndices = false;
+    expect(ids(), ['INDIAVIX']);
+  });
   test('optionChain is per underlying', () async {
     final repo = NeoChartsRepository(liveDataEnabled: false);
     final chain = await repo.optionChain('RELIANCE');

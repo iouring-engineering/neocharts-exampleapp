@@ -58,6 +58,8 @@ class _AllFeaturesRuntime implements LicenseRuntime {
 void grantAllFeatures() {
   // ignore: invalid_use_of_visible_for_testing_member
   NeoChartPage.runtimeFactory = ({homeKey}) => _AllFeaturesRuntime();
+  // The order tests trade the starting NIFTY chart.
+  NeoChartsRepository.spotsAreIndices = false;
 }
 
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
