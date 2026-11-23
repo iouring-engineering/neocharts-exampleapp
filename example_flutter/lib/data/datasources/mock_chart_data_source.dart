@@ -200,8 +200,7 @@ class MockChartDataSource {
   List<Map<String, dynamic>> futures(String underlyingId) =>
       _futures[underlyingId] ?? const [];
 
-  // NIFTY and BANKNIFTY are tradable here on purpose (patrol trades them);
-  // the fixture apps treat them as indices.
+  // NIFTY and BANKNIFTY join these in `NeoChartsRepository.indexSymbols`.
   /// The one index with no option chain, to exercise the layout menu's FnO
   /// gating by switching to it.
   final List<Map<String, dynamic>> indexSymbols = const [

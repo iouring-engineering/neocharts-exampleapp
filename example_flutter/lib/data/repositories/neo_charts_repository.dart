@@ -150,8 +150,15 @@ class NeoChartsRepository
     ),
   };
 
+  /// NIFTY and BANKNIFTY are indices, as on a real host, so the chart
+  /// offers no order pad for them. Patrol turns this off to trade them.
+  static bool spotsAreIndices = true;
+
   @override
-  late final List<SymbolInfo> indexSymbols = _parsed(_dataSource.indexSymbols);
+  late final List<SymbolInfo> indexSymbols = [
+    if (spotsAreIndices) ...[_symbols['NIFTY']!, _symbols['BANKNIFTY']!],
+    ..._parsed(_dataSource.indexSymbols),
+  ];
 
   @override
   bool get isMarketOrderSupported => true;
