@@ -199,7 +199,8 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(height: 16),
                             ChartCard(
                               title: 'UniChart',
-                              subtitle: 'Single chart with Buy / Sell',
+                              subtitle:
+                                  'Quote dashboard with an embedded chart',
                               icon: Icons.candlestick_chart_rounded,
                               gradient: const [
                                 Color(0xFF7C5CFF),
