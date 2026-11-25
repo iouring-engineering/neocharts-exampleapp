@@ -9,18 +9,19 @@ import 'helpers.dart';
 import 'positions/positions_test_helpers.dart';
 
 // UniChart (`NeoChartPage.uni`): one chart under a compact toolbar, with a
-// collapsible drawing rail floating over it, opened here from its home card
-// (UniChartScreen: symbol app bar + Buy / Sell bar).
+// floating drawing-tools button over it that opens a toolbar across the
+// chart's top, opened here from its home card (UniChartScreen: symbol app
+// bar + Buy / Sell bar).
 
-// Tooltips of the rail buttons these tests use (English l10n strings).
+// Tooltip of the toolbar group these tests use (English l10n strings).
 const _linesTooltip = 'Lines & Channels';
 const _trendLine = 'Trend Line';
 
-final _expandBtn = find.byKey(const Key(ChartTestKeys.uniRailExpandBtn));
-final _collapseBtn = find.byKey(const Key(ChartTestKeys.uniRailCollapseBtn));
+final _panelBtn = find.byKey(const Key(ChartTestKeys.drawToolsPanelBtn));
+final _closeBtn = find.byKey(const Key(ChartTestKeys.drawingToolbarCloseBtn));
 
-Future<void> _expandRail(PatrolIntegrationTester $) async {
-  await $.tester.tap(_expandBtn);
+Future<void> _openToolbar(PatrolIntegrationTester $) async {
+  await $.tester.tap(_panelBtn);
   await $.pumpAndSettle();
 }
 
@@ -32,9 +33,10 @@ Future<void> _openWithPosition(PatrolIntegrationTester $) async {
   mock.seedPosition();
 }
 
-// Opens [tooltip]'s options from the bar on its button's right edge.
-Future<void> _openRailOptions(PatrolIntegrationTester $, String tooltip) async {
-  await $.tester.tap(find.byKey(Key(ChartTestKeys.railFlyoutBar(tooltip))));
+// Opens [tooltip]'s options from the chevron beside its button (the
+// button and its chevron share the tooltip; the chevron comes last).
+Future<void> _openOptions(PatrolIntegrationTester $, String tooltip) async {
+  await $.tester.tap(find.byTooltip(tooltip).last);
   await $.pumpAndSettle();
 }
 
@@ -74,7 +76,7 @@ void main() {
       expect(find.byKey(Key(ChartTestKeys.menuRailChartTypes)), findsOneWidget);
       expect(find.byKey(Key(ChartTestKeys.menuRailIntervals)), findsOneWidget);
       expect(find.byKey(Key(ChartTestKeys.menuRailIndicators)), findsOneWidget);
-      // Drawing tools live in the floating rail, and layout / order prefs
+      // Drawing tools live behind the floating button, and layout / order prefs
       // aren't part of UniChart.
       expect(find.byKey(Key(ChartTestKeys.menuRailLayout)), findsNothing);
       expect(find.byKey(Key(ChartTestKeys.menuRailOrderPrefs)), findsNothing);
@@ -93,89 +95,77 @@ void main() {
       expect($(Key(ChartTestKeys.errorState)), findsNothing);
     });
 
-    group('floating drawing rail', () {
-      patrolTest('starts collapsed, expands and collapses with its chevrons', (
+    group('floating drawing tools button', () {
+      patrolTest('opens the toolbar, whose close button brings it back', (
         $,
       ) async {
         await openUniChartAndAwaitLoad($);
-        expect(_expandBtn, findsOneWidget);
-        expect(_collapseBtn, findsNothing);
+        expect(_panelBtn, findsOneWidget);
+        expect(_closeBtn, findsNothing);
 
-        await _expandRail($);
-        expect(_expandBtn, findsNothing);
-        expect(_collapseBtn, findsOneWidget);
+        await _openToolbar($);
+        expect(_panelBtn, findsNothing);
+        expect(_closeBtn, findsOneWidget);
 
-        await $.tester.tap(_collapseBtn);
+        await $.tester.tap(_closeBtn);
         await $.pumpAndSettle();
-        expect(_expandBtn, findsOneWidget);
-        expect(_collapseBtn, findsNothing);
+        expect(_panelBtn, findsOneWidget);
+        expect(_closeBtn, findsNothing);
       });
 
-      patrolTest('tapping outside the rail collapses it', ($) async {
-        await openUniChartAndAwaitLoad($);
-        await _expandRail($);
-
-        // The app bar's symbol title is well outside the rail.
-        await $.tester.tap(find.text('NIFTY'));
-        await $.pumpAndSettle();
-
-        expect(_collapseBtn, findsNothing);
-        expect(_expandBtn, findsOneWidget);
-      });
-
-      patrolTest('a button\'s bar opens its options without collapsing', (
+      patrolTest('a group\'s chevron opens its options, toolbar stays open', (
         $,
       ) async {
         await openUniChartAndAwaitLoad($);
-        await _expandRail($);
+        await _openToolbar($);
 
-        await _openRailOptions($, _linesTooltip);
+        await _openOptions($, _linesTooltip);
 
         expect(find.text(_trendLine), findsOneWidget);
-        expect(_collapseBtn, findsOneWidget);
+        expect(_closeBtn, findsOneWidget);
       });
 
-      patrolTest('picking a tool closes the options and the rail', ($) async {
+      patrolTest('picking a tool closes the options and the toolbar', (
+        $,
+      ) async {
         await openUniChartAndAwaitLoad($);
-        await _expandRail($);
-        await _openRailOptions($, _linesTooltip);
+        await _openToolbar($);
+        await _openOptions($, _linesTooltip);
 
         await $.tester.tap(find.text(_trendLine));
         await $.pumpAndSettle();
 
         expect(find.text(_trendLine), findsNothing);
-        expect(_collapseBtn, findsNothing);
-        expect(_expandBtn, findsOneWidget);
+        expect(_closeBtn, findsNothing);
+        expect(_panelBtn, findsOneWidget);
         expect($(Key(ChartTestKeys.errorState)), findsNothing);
       });
 
-      patrolTest('tapping inside the open options does not collapse', (
+      patrolTest('tapping inside the open options keeps the toolbar', (
         $,
       ) async {
         await openUniChartAndAwaitLoad($);
-        await _expandRail($);
-        await _openRailOptions($, _linesTooltip);
+        await _openToolbar($);
+        await _openOptions($, _linesTooltip);
 
         // A section header is inside the options but isn't a tool.
         await $.tester.tap(find.text('LINES'));
         await $.pumpAndSettle();
 
-        expect(_collapseBtn, findsOneWidget);
+        expect(_closeBtn, findsOneWidget);
       });
 
-      patrolTest('the collapsed rail can be reopened after a tool pick', (
-        $,
-      ) async {
+      patrolTest('the toolbar can be reopened after a tool pick', ($) async {
         await openUniChartAndAwaitLoad($);
-        await _expandRail($);
-        await _openRailOptions($, _linesTooltip);
+        await _openToolbar($);
+        await _openOptions($, _linesTooltip);
         await $.tester.tap(find.text(_trendLine));
         await $.pumpAndSettle();
 
-        await _expandRail($);
+        await _openToolbar($);
 
-        expect(_collapseBtn, findsOneWidget);
-        expect(find.byTooltip(_linesTooltip), findsOneWidget);
+        expect(_closeBtn, findsOneWidget);
+        expect(find.byTooltip(_linesTooltip), findsNWidgets(2));
       });
     });
 
