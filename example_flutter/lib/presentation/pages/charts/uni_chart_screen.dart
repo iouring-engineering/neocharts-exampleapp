@@ -5,6 +5,7 @@ import 'package:neocharts_exampleapp/data/repositories/uni_chart_repository.dart
 import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/widgets.dart';
 
+const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
 const _buyColor = Color(0xFF00A651);
 const _sellColor = Color(0xFFFF1F4B);
 
@@ -76,6 +77,7 @@ class _UniChartScreenState extends State<UniChartScreen> {
                       oco: _uni,
                       positions: _uni,
                       alerts: _uni,
+                      homeKey: _homeKey.isEmpty ? null : _homeKey,
                     ),
                   ),
                 ),
