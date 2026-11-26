@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
+import 'package:neocharts_exampleapp/presentation/pages/charts/custom_drawer_buttons.dart';
 import 'package:nxtchart/widgets.dart';
 
 const _homeKey = String.fromEnvironment('NEOCHARTS_HOME_KEY');
@@ -26,6 +27,7 @@ class NeoChartScreen extends StatelessWidget {
       onClose: () => Navigator.of(context).pop(),
       homeKey: _homeKey.isEmpty ? null : _homeKey,
       style: _demoStyle,
+      customDrawerButtons: buildDrawerButtons(context),
     );
   }
 }
