@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:financial_chart/financial_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:neocharts_exampleapp/data/repositories/neo_charts_repository.dart';
 import 'package:neocharts_exampleapp/presentation/app.dart';
 import 'package:neocharts_exampleapp/presentation/widgets/chart_card.dart';
-import 'package:nxtchart/interface.dart';
 import 'package:nxtchart/src/enums/chart_indicator.dart';
 import 'package:nxtchart/src/licensing/license_runtime.dart';
-import 'package:nxtchart/src/presentation/pages/nxt_chart_page.dart';
-import 'package:nxtchart/src/presentation/blocs/chart_bloc.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
+import 'package:nxtchart/widgets.dart';
 import 'package:patrol/patrol.dart';
 
 // Call first thing in every test file's `main`.
@@ -56,28 +53,31 @@ class _AllFeaturesRuntime implements LicenseRuntime {
 }
 
 // The example app ships no neocharts-key.json, so the real license check
-// reports "unlicensed" and NxtChartPage renders LicenseErrorView instead of
+// reports "unlicensed" and NeoChartPage renders LicenseErrorView instead of
 // the chart. Tests stub the check to grant every feature.
 void grantAllFeatures() {
   // ignore: invalid_use_of_visible_for_testing_member
-  NxtChartPage.runtimeFactory = ({homeKey}) => _AllFeaturesRuntime();
+  NeoChartPage.runtimeFactory = ({homeKey}) => _AllFeaturesRuntime();
+  // The order tests trade the starting NIFTY chart.
+  NeoChartsRepository.spotsAreIndices = false;
 }
 
 // Pumps [ChartTemplateApp], waits for initialization, and taps the home
-// page's "NeoCharts" card. [interfaceOverride], when supplied, replaces the
-// ChartInterface the app would otherwise construct itself -- e.g. a handle
-// to seed positions on via seedPosition().
+// page's "NeoCharts" card. [hostOverride], when supplied, replaces the
+// NeoChartsRepository the app would otherwise construct itself -- e.g. a handle
+// to seed positions on via seedPosition(). [cardTitle] picks which home card
+// to open ('NeoCharts' by default; 'UniChart' for the single-chart page).
 Future<void> openChartAndAwaitLoad(
   PatrolIntegrationTester $, {
-  ChartInterface? interfaceOverride,
+  NeoChartsRepository? hostOverride,
+  String cardTitle = 'NeoCharts',
 }) async {
   grantAllFeatures();
   final completer = Completer<void>();
   await $.pumpWidget(
     ChartTemplateApp(
-      interfaceOverride: interfaceOverride,
+      hostOverride: hostOverride,
       onInitDone: completer.complete,
-      onInitError: completer.completeError,
     ),
   );
   await completer.future;
@@ -86,7 +86,7 @@ Future<void> openChartAndAwaitLoad(
   // header logo repeats the same "NeoCharts" text right above this card.
   final chartCard = find.descendant(
     of: find.byType(ChartCard),
-    matching: find.text('NeoCharts'),
+    matching: find.text(cardTitle),
   );
   await $.tester.ensureVisible(chartCard);
   await $.tester.pumpAndSettle();
@@ -99,9 +99,41 @@ Future<void> openChartAndAwaitLoad(
   );
 }
 
+// Pumps NeoChartPage directly with [widgetOverrides], skipping the home
+// page, so the example app itself never takes overrides.
+Future<void> openChartWithOverridesAndAwaitLoad(
+  PatrolIntegrationTester $,
+  NeoChartWidgetOverrides widgetOverrides,
+) async {
+  grantAllFeatures();
+  final host = NeoChartsRepository();
+  await $.pumpWidget(
+    MaterialApp(
+      home: NeoChartPage(
+        host: host,
+        oco: host,
+        alerts: host,
+        oiAnalytics: host,
+        intradayAnalytics: host,
+        fetchFunds: host.fetchFunds,
+        fetchTopOptions: host.fetchTopOptions,
+        widgetOverrides: widgetOverrides,
+        supportedResolutions: demoResolutions,
+        nativeResolutions: demoResolutions,
+      ),
+    ),
+  );
+  await $.pumpAndSettle();
+  await waitUntilAbsent(
+    $,
+    find.byKey(Key(ChartTestKeys.loadingState)),
+    timeout: const Duration(seconds: 30),
+  );
+}
+
 // Closes the chart (via the app bar's own close button) and re-opens a
 // fresh instance from the same home page, reusing the same underlying
-// ChartInterface/SharedPreferences. Used to prove a saved order preference
+// host/SharedPreferences. Used to prove a saved order preference
 // is genuinely read back from persisted storage on a fresh screen, not just
 // carried over via in-memory bloc state.
 Future<void> closeAndReopenChart(PatrolIntegrationTester $) async {
@@ -596,12 +628,6 @@ Future<void> closeChartTypeMenuRightPanel(PatrolIntegrationTester $) async {
   await $.pumpAndSettle();
 }
 
-// Returns the dual-panel layout's RIGHT-hand panel's live `GChart` -- the
-// same object the chart bloc mutates on a chart-type change -- so a test
-// can verify the actual rendered graph, not just the picker's selection.
-GChart currentChartRightPanel(PatrolIntegrationTester $) {
-  final overlayElement = $.tester.element(
-    find.byKey(Key(ChartTestKeys.debugVisibleRange)).last,
-  );
-  return BlocProvider.of<ChartBloc>(overlayElement).state.chart!;
-}
+// Opens the home page's "UniChart" card and waits for its chart to load.
+Future<void> openUniChartAndAwaitLoad(PatrolIntegrationTester $) =>
+    openChartAndAwaitLoad($, cardTitle: 'UniChart');

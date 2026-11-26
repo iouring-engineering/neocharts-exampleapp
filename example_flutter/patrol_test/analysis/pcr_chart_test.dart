@@ -6,7 +6,7 @@ import 'package:patrol/patrol.dart';
 import 'analysis_test_helpers.dart';
 
 // PCR tab:
-//   - NxtChartRepository.fetchPcrIntraday is fully implemented with real
+//   - NeoChartsRepository.fetchPcrIntraday is fully implemented with real
 //     synthetic data (unlike OI Analysis/OI Change), so this tab renders
 //     real chart content by default, not the empty state.
 //   - A range-filter chip row (PcrRange.values) picks how many strikes

@@ -35,6 +35,8 @@ import 'orders/oco/oco_cancel_test.dart' as orders__oco__oco_cancel_test;
 import 'orders/oco/oco_create_test.dart' as orders__oco__oco_create_test;
 import 'orders/oco/oco_modify_test.dart' as orders__oco__oco_modify_test;
 import 'orders/order_chart_marker_test.dart' as orders__order_chart_marker_test;
+import 'orders/order_pad_margin_brokerage_test.dart'
+    as orders__order_pad_margin_brokerage_test;
 import 'orders/place_order_test.dart' as orders__place_order_test;
 import 'performance/alerts_perf_test.dart' as performance__alerts_perf_test;
 import 'performance/orders_perf_test.dart' as performance__orders_perf_test;
@@ -57,8 +59,12 @@ import 'positions/position_chart_drag_test.dart'
     as positions__position_chart_drag_test;
 import 'positions/positions_list_test.dart' as positions__positions_list_test;
 import 'range_switching_test.dart' as range_switching_test;
+import 'requested_indicators_test.dart' as requested_indicators_test;
+import 'search_override_test.dart' as search_override_test;
+import 'subchart_indicators_test.dart' as subchart_indicators_test;
 import 'top_options_test.dart' as top_options_test;
 import 'trading_test.dart' as trading_test;
+import 'uni_chart_test.dart' as uni_chart_test;
 
 void main() {
   group('alerts.alert_chart_marker_test', alerts__alert_chart_marker_test.main);
@@ -89,6 +95,10 @@ void main() {
   group('orders.oco.oco_create_test', orders__oco__oco_create_test.main);
   group('orders.oco.oco_modify_test', orders__oco__oco_modify_test.main);
   group('orders.order_chart_marker_test', orders__order_chart_marker_test.main);
+  group(
+    'orders.order_pad_margin_brokerage_test',
+    orders__order_pad_margin_brokerage_test.main,
+  );
   group('orders.place_order_test', orders__place_order_test.main);
   group('performance.alerts_perf_test', performance__alerts_perf_test.main);
   group('performance.orders_perf_test', performance__orders_perf_test.main);
@@ -123,6 +133,10 @@ void main() {
   );
   group('positions.positions_list_test', positions__positions_list_test.main);
   group('range_switching_test', range_switching_test.main);
+  group('requested_indicators_test', requested_indicators_test.main);
+  group('search_override_test', search_override_test.main);
+  group('subchart_indicators_test', subchart_indicators_test.main);
   group('top_options_test', top_options_test.main);
   group('trading_test', trading_test.main);
+  group('uni_chart_test', uni_chart_test.main);
 }

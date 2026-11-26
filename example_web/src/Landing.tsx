@@ -1,14 +1,12 @@
 // apps/example_web/src/Landing.tsx
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { THEME_STORAGE_KEY } from './nxtChartHost'
+import { THEME_STORAGE_KEY } from './neoChartsHost'
+import { ThemeToggle } from './ThemeToggle'
 
 function openRoute(route: 'terminal' | 'embedded') {
-  // A query param, not a hash -- Flutter's web engine manages `location.hash`
-  // itself and strips this app's own hash-based marker once it boots, which
-  // silently broke browser back/forward (both the landing and terminal
-  // pages ended up at the same bare URL). `location.search` isn't touched
-  // by Flutter, so this survives and back/forward works correctly.
+  // A query param, not a hash -- the chart engine manages `location.hash`
+  // itself and would strip a hash-based marker, breaking back/forward.
   location.href = `${location.pathname}?route=${route}`
 }
 
@@ -16,24 +14,19 @@ const DARK_BACKGROUND = '#090B10'
 const LIGHT_BACKGROUND = '#F5F7FB'
 const DARK_TEXT = '#FFFFFF'
 const LIGHT_TEXT = '#0A0A12'
-// Same Material3 ColorScheme.fromSeed-derived cardColor as the Android/iOS
-// ports' theme-toggle background (#6C63FF light / #8B7CFF dark seeds).
-const LIGHT_CARD_COLOR = '#FCF8FF'
-const DARK_CARD_COLOR = '#141318'
 const LOGO_GRADIENT = 'linear-gradient(90deg, #7C5CFF, #4B8BFF)'
 const CARD_GRADIENT = 'linear-gradient(135deg, #00A884, #00C6A2)'
 
 /**
  * Demo-only landing screen -- a real host decides its own route. This
- * card just sets the URL hash; `lib/main_web.dart` never sees this
- * screen -- Flutter only boots once a route has been chosen, see `App.tsx`.
+ * card just sets the URL query; the chart only boots once a route has
+ * been chosen, see `App.tsx`.
  * Ported from example_flutter's home_page.dart/chart_card.dart -- same
  * layout/colors/copy. The sun/moon toggle both switches this landing page's
  * own dark/light look (matching Android/iOS's local toggle state) AND
- * persists the choice to `forcedBrightness` (via `THEME_STORAGE_KEY`) so the
- * chart renders in the same theme once opened -- `window.NxtChartHost`
- * reads that key once at Flutter boot, which happens on a fresh page load
- * after `openRoute`, so no reload is needed here.
+ * persists the choice (via `THEME_STORAGE_KEY`) so the chart renders in the
+ * same theme once opened -- `ChartMount` reads it as the mount theme on the
+ * fresh page load after `openRoute`, so no reload is needed here.
  */
 /** One of the two integration-pattern cards on the landing page, styled like the original NeoCharts hero card (gradient, decorative circles, icon chip). */
 function IntegrationCard({
@@ -133,7 +126,6 @@ export function Landing() {
   const [isDark, setIsDark] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) !== 'light')
   const background = isDark ? DARK_BACKGROUND : LIGHT_BACKGROUND
   const textColor = isDark ? DARK_TEXT : LIGHT_TEXT
-  const cardColor = isDark ? DARK_CARD_COLOR : LIGHT_CARD_COLOR
 
   return (
     <div
@@ -177,46 +169,7 @@ export function Landing() {
               <div style={{ fontSize: 12, opacity: 0.55 }}>Trading intelligence</div>
             </div>
             <div style={{ flex: 1 }} />
-            <button
-              onClick={() => {
-                const next = !isDark
-                setIsDark(next)
-                localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light')
-              }}
-              aria-label="Toggle landing page theme"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                background: cardColor,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isDark ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="5" fill={textColor} />
-                  <g stroke={textColor} strokeWidth="2" strokeLinecap="round">
-                    <line x1="12" y1="1" x2="12" y2="3" />
-                    <line x1="12" y1="21" x2="12" y2="23" />
-                    <line x1="1" y1="12" x2="3" y2="12" />
-                    <line x1="21" y1="12" x2="23" y2="12" />
-                    <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" />
-                    <line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
-                    <line x1="4.2" y1="19.8" x2="5.6" y2="18.4" />
-                    <line x1="18.4" y1="5.6" x2="19.8" y2="4.2" />
-                  </g>
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" fill={textColor} />
-                  <circle cx="17" cy="9" r="8" fill={cardColor} />
-                </svg>
-              )}
-            </button>
+            <ThemeToggle isDark={isDark} onChange={setIsDark} label="Toggle landing page theme" />
           </div>
 
           <div style={{ height: 70 }} />

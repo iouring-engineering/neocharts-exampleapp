@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { ChartMount } from './ChartMount'
-import { THEME_STORAGE_KEY } from './nxtChartHost'
+import { THEME_STORAGE_KEY } from './neoChartsHost'
+import { ThemeToggle } from './ThemeToggle'
 
 const NAV_ITEMS = ['Overview', 'Positions', 'Orders', 'Alerts', 'Settings']
 
@@ -19,10 +21,10 @@ const LIGHT_TEXT = '#0A0A12'
  * `forcedBrightness` choice the landing page's toggle set (and that the
  * chart itself reads at boot) rather than a fixed dark palette, so a host
  * page embedding the chart in light mode doesn't get a dark navbar around
- * a light chart.
+ * a light chart. The header's toggle switches both the chrome and the chart.
  */
 export function EmbeddedDashboard() {
-  const isDark = localStorage.getItem(THEME_STORAGE_KEY) !== 'light'
+  const [isDark, setIsDark] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) !== 'light')
   const background = isDark ? DARK_BACKGROUND : LIGHT_BACKGROUND
   const textColor = isDark ? DARK_TEXT : LIGHT_TEXT
   const overlay = (alpha: number) => (isDark ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`)
@@ -51,6 +53,16 @@ export function EmbeddedDashboard() {
         }}
       >
         IOURING
+        <div style={{ flex: 1 }} />
+        <ThemeToggle
+          isDark={isDark}
+          onChange={(next) => {
+            setIsDark(next)
+            // Same-tab writes fire no `storage` event; ChartMount restyles on one.
+            window.dispatchEvent(new StorageEvent('storage', { key: THEME_STORAGE_KEY }))
+          }}
+          label="Toggle embedded page theme"
+        />
       </div>
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>

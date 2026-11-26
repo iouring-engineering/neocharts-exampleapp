@@ -22,10 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material.icons.rounded.CandlestickChart
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
-import androidx.compose.material.icons.rounded.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,8 +59,9 @@ private val CardGradientEnd = Color(0xFF00C6A2)
 private val LightCardColor = Color(0xFFFCF8FF)
 private val DarkCardColor = Color(0xFF141318)
 
+/** [onOpenChart] gets the page's brightness (true = dark), which the chart opens in. */
 @Composable
-fun LandingScreen(onOpenChart: () -> Unit) {
+fun LandingScreen(onOpenChart: (dark: Boolean) -> Unit) {
     var isDark by remember { mutableStateOf(true) }
     val textColor = if (isDark) Color.White else Color(0xFF0A0A12)
     val background = if (isDark) DarkBackground else LightBackground
@@ -103,7 +104,7 @@ fun LandingScreen(onOpenChart: () -> Unit) {
 
             Spacer(modifier = Modifier.height(44.dp))
 
-            NeoChartsCard(onTap = onOpenChart)
+            NeoChartsCard(onTap = { onOpenChart(isDark) })
 
             Spacer(modifier = Modifier.height(60.dp))
         }
@@ -227,7 +228,7 @@ private fun NeoChartsCard(onTap: () -> Unit) {
                     .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Rounded.ShowChart, contentDescription = null, tint = Color.White, modifier = Modifier.size(27.dp))
+                Icon(Icons.AutoMirrored.Rounded.ShowChart, contentDescription = null, tint = Color.White, modifier = Modifier.size(27.dp))
             }
 
             Spacer(modifier = Modifier.weight(1f))

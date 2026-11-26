@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:nxtchart/src/enums/order_action.dart';
 import 'package:nxtchart/src/enums/order_type.dart';
 import 'package:nxtchart/src/shared/chart_test_keys.dart';
 import 'package:patrol/patrol.dart';
@@ -11,7 +12,7 @@ import '../helpers.dart';
 // openOrdersPanel, openOrderPad, findAnyOrderCancelBtn/ModifyBtn,
 // waitUntilPresent/Absent) rather than duplicating them.
 //
-// Order placement/modification/cancellation in NxtChartRepository are
+// Order placement/modification/cancellation in NeoChartsRepository are
 // unconditional pass-throughs with no configurable failure, so this suite
 // only exercises what's actually observable through it: the client-side
 // validation in the order/modify pads, and orders-list/dialog state after
@@ -98,6 +99,26 @@ Future<void> openCancelDialogForFirstOrder(PatrolIntegrationTester $) async {
 
 // The order pad's own quantity TextField.
 Finder orderPadQtyField() => find.byKey(Key(ChartTestKeys.orderPadQtyField));
+
+// The order pad's required-margin/brokerage preview for [action] -- empty
+// (SizedBox.shrink()) until the first fetchMargin/fetchBrokerage reply
+// lands, see OrderPadMarginBrokerageInfo.
+Finder marginBrokerageInfo(OrderAction action) =>
+    find.byKey(Key(ChartTestKeys.orderPadMarginBrokerageInfo(action.name)));
+
+// The margin/brokerage preview's own displayed total ("Req: ₹X") -- its
+// second Text child, the first being the "Req: " label.
+String marginBrokerageText(PatrolIntegrationTester $, OrderAction action) {
+  final texts = $.tester
+      .widgetList<Text>(
+        find.descendant(
+          of: marginBrokerageInfo(action),
+          matching: find.byType(Text),
+        ),
+      )
+      .toList();
+  return texts.last.data ?? '';
+}
 
 // The order pad's own price TextField -- shared by both the read-only
 // Market display and the editable Limit field, since only one is ever
