@@ -27,7 +27,7 @@ class NeoChartScreen extends StatelessWidget {
       onClose: () => Navigator.of(context).pop(),
       homeKey: _homeKey.isEmpty ? null : _homeKey,
       style: _demoStyle,
-      config: NeoChartConfig(customDrawerButtons: buildDrawerButtons(context)),
+      customDrawerButtons: buildDrawerButtons(context),
     );
   }
 }
